@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table.tsx'
-import { counselDetailPath } from '@/hooks/useHandoffToasts.ts'
+import { counselDetailPath } from '@/hooks/useHandoffToasts.tsx'
 import { CASE_STATUS_LABEL } from '@/lib/counsel/labels.ts'
 import { maskedStudentLabel, scheduleLabel, splitTitle } from '@/lib/counsel/teacherView.ts'
 import { cn } from '@/lib/utils.ts'

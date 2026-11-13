@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import type { CounselCase } from '@/api/counselTypes.ts'
+import { HandoffToast } from '@/components/counsel/HandoffToast.tsx'
 import { RISK_LABEL } from '@/lib/counsel/labels.ts'
 import { takeNewHandoffs } from '@/lib/counsel/notifications.ts'
 import { maskName } from '@/lib/counsel/teacherView.ts'
@@ -10,7 +11,7 @@ export const counselDetailPath = (id: string) => `/teacher/manage-apply/counsel/
 
 /**
  * 폴링으로 받은 목록에 새 전환 건이 생기면 토스트를 한 번 띄운다.
- * 처음 불러온 목록에 이미 있던 건은 종 배지로만 알린다.
+ * 처음 불러온 목록에 이미 있던 건은 종 배지로만 알린다. 토스트를 누르면 그 건의 상세로 간다.
  */
 export function useHandoffToasts(cases: CounselCase[] | undefined) {
   const navigate = useNavigate()
@@ -22,11 +23,19 @@ export function useHandoffToasts(cases: CounselCase[] | undefined) {
     seen.current = result.seen
     for (const c of result.fresh) {
       const risk = c.risk ? ` · 위험도 ${RISK_LABEL[c.risk]}` : ''
-      toast(`${maskName(c.student.name)} 학생이 개인상담으로 전환됐어요${risk}`, {
-        id: c.id,
-        duration: 10_000,
-        action: { label: '상세 보기', onClick: () => navigate(counselDetailPath(c.id)) },
-      })
+      const message = `${maskName(c.student.name)} 학생이 개인상담으로 전환됐어요${risk}`
+      toast.custom(
+        (toastId) => (
+          <HandoffToast
+            message={message}
+            onOpen={() => {
+              toast.dismiss(toastId)
+              navigate(counselDetailPath(c.id))
+            }}
+          />
+        ),
+        { id: c.id, duration: 10_000 },
+      )
     }
   }, [cases, navigate])
 }
