@@ -1,5 +1,5 @@
 import { SendHorizontal } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { type ReactNode, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button.tsx'
 import { Textarea } from '@/components/ui/textarea.tsx'
 
@@ -31,9 +31,22 @@ export function ChatComposer({
 }: ChatComposerProps) {
   const text = value.trim()
   const canSend = !disabled && text.length > 0
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  // 보내는 동안 입력창이 막히면 포커스가 빠지므로, 보낸 뒤 다시 풀릴 때 입력창으로 돌려놓는다.
+  const refocusRef = useRef(false)
   const send = () => {
-    if (canSend) onSubmit(text)
+    if (!canSend) return
+    refocusRef.current = true
+    onSubmit(text)
+    inputRef.current?.focus()
   }
+
+  useEffect(() => {
+    if (!disabled && refocusRef.current) {
+      refocusRef.current = false
+      inputRef.current?.focus()
+    }
+  }, [disabled])
 
   return (
     <form
@@ -46,6 +59,7 @@ export function ChatComposer({
       {suggestions}
       <div className="flex items-end gap-2">
         <Textarea
+          ref={inputRef}
           aria-label="챗봇에게 보낼 말"
           rows={2}
           placeholder="하고 싶은 이야기를 적어 보세요."
