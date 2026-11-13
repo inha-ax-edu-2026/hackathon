@@ -69,6 +69,14 @@ npm run build
 npm run preview
 ```
 
+## Vercel 배포
+
+- Root Directory는 `frontend`, Framework Preset은 Vite로 둡니다. (빌드 `npm run build`, 출력 `dist`)
+- 환경변수 `VITE_USE_MOCK=true`를 Vercel 프로젝트 설정의 Environment Variables에 넣습니다.
+  `.env`는 커밋되지 않으므로 Vercel 빌드에 들어가지 않고, 값은 빌드할 때 코드에 박히므로 바꾼 뒤에는 재배포해야 합니다.
+- `vercel.json`이 모든 경로를 `index.html`로 보내므로 `/teacher/...` 같은 주소를 새로고침하거나 직접 열어도 404가 나지 않습니다.
+- 목 데이터는 브라우저 `localStorage`에 저장됩니다. 학생·교사 탭은 같은 브라우저에서 열어야 상담 건이 공유됩니다.
+
 ## 외부 자산
 
 - UI 컴포넌트: [shadcn/ui](https://ui.shadcn.com) (MIT), 아이콘: [lucide-react](https://lucide.dev) (ISC)
