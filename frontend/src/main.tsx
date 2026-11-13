@@ -10,9 +10,21 @@ import { router } from '@/router.tsx'
 const rootElement = document.getElementById('root')
 if (!rootElement) throw new Error('#root 요소를 찾을 수 없습니다.')
 
-/** VITE_USE_MOCK=true면 MSW로 목 API를 켠다. 백엔드 없이도 데모 경로가 동작하게 한다. */
+/**
+ * 목 API를 켤지 정한다. VITE_USE_MOCK=true면 켜고, false면 끈다.
+ * 비어 있으면 백엔드 주소(VITE_API_BASE_URL)가 없을 때 켠다. 주소 없이 끄면 요청이 정적 호스팅
+ * (Vercel 등)으로 가서 POST가 405로 실패하므로, 환경변수를 빠뜨린 배포에서도 데모 경로가 돌게 한다.
+ */
+function shouldMock() {
+  const { VITE_USE_MOCK, VITE_API_BASE_URL } = import.meta.env
+  if (VITE_USE_MOCK === 'true') return true
+  if (VITE_USE_MOCK === 'false') return false
+  return !VITE_API_BASE_URL
+}
+
+/** 목 API가 켜져 있으면 MSW를 시작한다. 백엔드 없이도 데모 경로가 동작하게 한다. */
 async function enableMocking() {
-  if (import.meta.env.VITE_USE_MOCK !== 'true') return
+  if (!shouldMock()) return
   try {
     const { worker } = await import('@/mocks/browser.ts')
     await worker.start({ onUnhandledFrame: 'bypass' })

@@ -21,7 +21,7 @@ npm install
 cp .env.example .env
 ```
 
-`.env`를 열어 `VITE_USE_MOCK=true`로 바꿉니다. (비어 있으면 목 API가 꺼지고 실제 백엔드로 요청이 갑니다.)
+`.env`를 열어 `VITE_USE_MOCK=true`로 바꿉니다. (비어 있어도 `VITE_API_BASE_URL`이 비어 있으면 목 API가 켜집니다. 실제 백엔드를 쓰려면 `VITE_API_BASE_URL`을 넣거나 `VITE_USE_MOCK=false`로 둡니다.)
 
 ```bash
 npm run dev
@@ -31,10 +31,10 @@ Chrome에서 http://localhost:5173 을 엽니다.
 
 ## 환경변수
 
-| 키                  | 설명                                                  |
-| ------------------- | ----------------------------------------------------- |
-| `VITE_USE_MOCK`     | `true`면 MSW 목 API를 켠다. 시연할 때는 `true`로 둔다 |
-| `VITE_API_BASE_URL` | 백엔드 API 주소. 목을 쓸 때는 비워 둔다               |
+| 키                  | 설명                                                                                |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| `VITE_USE_MOCK`     | `true`면 MSW 목 API를 켜고 `false`면 끈다. 비어 있으면 백엔드 주소가 없을 때만 켠다 |
+| `VITE_API_BASE_URL` | 백엔드 API 주소. 목을 쓸 때는 비워 둔다                                             |
 
 ## 시연 순서
 
@@ -73,6 +73,7 @@ npm run preview
 
 - Root Directory는 `frontend`, Framework Preset은 Vite로 둡니다. (빌드 `npm run build`, 출력 `dist`)
 - 환경변수 `VITE_USE_MOCK=true`를 Vercel 프로젝트 설정의 Environment Variables에 넣습니다.
+  빠뜨려도 `VITE_API_BASE_URL`이 없으면 목 API가 켜집니다. (목이 꺼진 채 배포되면 Vercel이 `POST /api/...`에 405를 돌려줍니다.)
   `.env`는 커밋되지 않으므로 Vercel 빌드에 들어가지 않고, 값은 빌드할 때 코드에 박히므로 바꾼 뒤에는 재배포해야 합니다.
 - `vercel.json`이 모든 경로를 `index.html`로 보내므로 `/teacher/...` 같은 주소를 새로고침하거나 직접 열어도 404가 나지 않습니다.
 - 목 데이터는 브라우저 `localStorage`에 저장됩니다. 학생·교사 탭은 같은 브라우저에서 열어야 상담 건이 공유됩니다.
