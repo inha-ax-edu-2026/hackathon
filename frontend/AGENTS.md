@@ -50,7 +50,7 @@ src/
 ├── api/       # 도메인별 API. counselTypes.ts(계약 타입), studentCounsel.ts·teacherCounsel.ts·demo.ts(쿼리·뮤테이션 훅)
 ├── hooks/     # 커스텀 훅 (useVoiceInput: 음성 입력, useHandoffToasts: 교사 전환 알림 토스트)
 ├── lib/
-│   ├── counsel/        # 상담 화면 로직: 라벨·양식 검증·시간 표기·교사용 가림·알림 계산·음성 오류·예시 문장
+│   ├── counsel/        # 상담 화면 로직: 경로·라벨·양식 검증·시간 표기·교사용 가림·알림 계산·음성 오류·예시 문장
 │   ├── api.ts          # apiFetch: 백엔드 호출 공통 fetch 래퍼
 │   ├── utils.ts        # cn(): Tailwind 클래스 병합
 │   └── queryClient.ts  # QueryClient 기본 옵션
