@@ -31,6 +31,12 @@ npm run check       # 검사
 npm run check:fix   # 자동 수정
 ```
 
+## 테스트 (Vitest)
+
+```bash
+npm test   # 상담 API 계약 테스트. Node에서 MSW 목 핸들러를 띄워 실행한다(백엔드·브라우저 불필요)
+```
+
 ## 빌드
 
 ```bash
