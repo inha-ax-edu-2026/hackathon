@@ -1,4 +1,4 @@
-import type { CounselCase, CounselForm, Message } from '@/api/counselTypes.ts'
+import type { CounselCase, CounselForm, Message, SendMessageResponse } from '@/api/counselTypes.ts'
 import { createSeedCases } from './seed.ts'
 
 /**
@@ -15,6 +15,8 @@ export type StoredCase = {
   messages: Message[]
   /** 전환 요약. 전환·종료 전이나 개인상담 시드는 null. */
   summary: string | null
+  /** 발화 보내기의 request_id별 응답. 같은 request_id 재전송에 저장된 결과를 그대로 돌려준다. */
+  replies?: Record<string, SendMessageResponse>
 }
 
 export type Db = { cases: StoredCase[] }
