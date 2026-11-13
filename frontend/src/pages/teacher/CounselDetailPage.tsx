@@ -11,8 +11,7 @@ import { PageBody, PageHeader } from '@/components/shell/PageHeader.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { ApiError } from '@/lib/api.ts'
 import { HANDOFF_REASON_LABEL } from '@/lib/counsel/labels.ts'
-
-const LIST_PATH = '/teacher/manage-apply/counsel'
+import { TEACHER_COUNSEL_PATH } from '@/lib/counsel/paths.ts'
 
 function errorMessage(error: unknown) {
   if (error instanceof ApiError) {
@@ -23,7 +22,7 @@ function errorMessage(error: unknown) {
 }
 
 const backLink = (
-  <Link to={LIST_PATH} className="inline-flex items-center gap-1">
+  <Link to={TEACHER_COUNSEL_PATH} className="inline-flex items-center gap-1">
     <ChevronLeft className="size-4" />
     목록으로 돌아가기
   </Link>

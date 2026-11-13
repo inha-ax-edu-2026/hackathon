@@ -1,17 +1,18 @@
 import { ExternalLink, GraduationCap, Presentation, RotateCcw } from 'lucide-react'
 import { useResetDemo } from '@/api/demo.ts'
 import { Button } from '@/components/ui/button.tsx'
+import { STUDENT_COUNSEL_PATH, TEACHER_COUNSEL_PATH } from '@/lib/counsel/paths.ts'
 
 const SCREENS = [
   {
     label: '학생 화면 열기',
-    to: '/student/counsel',
+    to: STUDENT_COUNSEL_PATH,
     icon: GraduationCap,
     hint: '내 상담 → AI 챗봇 상담',
   },
   {
     label: '교사 화면 열기',
-    to: '/teacher/manage-apply/counsel',
+    to: TEACHER_COUNSEL_PATH,
     icon: Presentation,
     hint: '개인상담 관리 → 상담 건 상세',
   },

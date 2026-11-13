@@ -15,11 +15,12 @@ import { Button } from '@/components/ui/button.tsx'
 import { useVoiceInput } from '@/hooks/useVoiceInput.ts'
 import { ApiError } from '@/lib/api.ts'
 import { DEMO_LINES } from '@/lib/counsel/demoLines.ts'
+import { STUDENT_COUNSEL_PATH } from '@/lib/counsel/paths.ts'
 import { VOICE_ERROR_MESSAGES } from '@/lib/counsel/voice.ts'
 import { cn } from '@/lib/utils.ts'
 
 const BACK = (
-  <Link to="/student/counsel" className="inline-flex items-center gap-0.5 hover:underline">
+  <Link to={STUDENT_COUNSEL_PATH} className="inline-flex items-center gap-0.5 hover:underline">
     <ChevronLeft className="size-4" /> 내 상담으로
   </Link>
 )

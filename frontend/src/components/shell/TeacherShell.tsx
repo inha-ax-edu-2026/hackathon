@@ -13,9 +13,10 @@ import { toast } from 'sonner'
 import { useTeacherCases } from '@/api/teacherCounsel.ts'
 import { NotificationSheet } from '@/components/counsel/NotificationSheet.tsx'
 import { Toaster } from '@/components/ui/sonner.tsx'
-import { counselDetailPath, useHandoffToasts } from '@/hooks/useHandoffToasts.tsx'
+import { useHandoffToasts } from '@/hooks/useHandoffToasts.tsx'
 import { DEMO_TEACHER_NAME } from '@/lib/counsel/identity.ts'
 import { unreadHandoffs } from '@/lib/counsel/notifications.ts'
+import { counselDetailPath, TEACHER_COUNSEL_PATH } from '@/lib/counsel/paths.ts'
 import { AppShell } from './AppShell.tsx'
 import { BellButton } from './BellButton.tsx'
 import type { LnbMenuItem } from './Lnb.tsx'
@@ -25,7 +26,7 @@ const TEACHER_MENU: LnbMenuItem[] = [
   { label: '시간', icon: CalendarDays },
   { label: '수업', icon: BookOpen },
   { label: '학생', icon: Users },
-  { label: '상담', icon: MessagesSquare, to: '/teacher/manage-apply/counsel' },
+  { label: '상담', icon: MessagesSquare, to: TEACHER_COUNSEL_PATH },
   { label: '설문', icon: ClipboardList },
   { label: '사용', icon: CircleHelp },
 ]
@@ -44,7 +45,7 @@ export function TeacherShell() {
   return (
     <>
       <AppShell
-        homeTo="/teacher/manage-apply/counsel"
+        homeTo={TEACHER_COUNSEL_PATH}
         name={DEMO_TEACHER_NAME}
         identity={`${DEMO_TEACHER_NAME} 선생님`}
         menu={TEACHER_MENU}

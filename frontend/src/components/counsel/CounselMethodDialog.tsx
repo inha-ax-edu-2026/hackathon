@@ -12,13 +12,14 @@ import {
 } from '@/components/ui/dialog.tsx'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group.tsx'
 import { TEACHER_VISIBILITY_NOTICE } from '@/lib/counsel/labels.ts'
+import { CHATBOT_FORM_PATH, COUNSEL_REGISTER_PATH } from '@/lib/counsel/paths.ts'
 import { cn } from '@/lib/utils.ts'
 
 type Method = 'chatbot' | 'individual'
 
 const NEXT_PATH: Record<Method, string> = {
-  chatbot: '/student/counsel/chatbot/new',
-  individual: '/student/counsel/register',
+  chatbot: CHATBOT_FORM_PATH,
+  individual: COUNSEL_REGISTER_PATH,
 }
 
 const OPTIONS: { value: Method; title: string; description: string; icon: typeof Bot }[] = [

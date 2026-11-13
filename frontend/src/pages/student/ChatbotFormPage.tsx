@@ -15,6 +15,7 @@ import {
   QUESTIONS,
   TOPICS,
 } from '@/lib/counsel/form.ts'
+import { chatbotPath, STUDENT_COUNSEL_PATH } from '@/lib/counsel/paths.ts'
 
 const labelClass = 'mb-2 block text-sm font-medium'
 
@@ -35,8 +36,7 @@ function ChatbotFormPage() {
 
   const submit = () =>
     createCase.mutate(buildCounselForm(values), {
-      onSuccess: ({ case: created }) =>
-        navigate(`/student/counsel/chatbot/${created.id}`, { replace: true }),
+      onSuccess: ({ case: created }) => navigate(chatbotPath(created.id), { replace: true }),
     })
 
   return (
@@ -44,7 +44,7 @@ function ChatbotFormPage() {
       <PageHeader
         title="AI 챗봇 상담 신청"
         description="상담 전에 상담 양식을 작성하면 바로 AI 챗봇과 이야기할 수 있어요."
-        back={<Link to="/student/counsel">‹ 내 상담으로 돌아가기</Link>}
+        back={<Link to={STUDENT_COUNSEL_PATH}>‹ 내 상담으로 돌아가기</Link>}
       />
       <PageBody>
         <form
@@ -134,7 +134,7 @@ function ChatbotFormPage() {
 
           <div className="flex justify-end gap-2">
             <Button asChild variant="outline" size="lg">
-              <Link to="/student/counsel">취소</Link>
+              <Link to={STUDENT_COUNSEL_PATH}>취소</Link>
             </Button>
             <Button type="submit" size="lg" disabled={!canSubmit}>
               {createCase.isPending ? '시작하는 중…' : '상담 시작하기'}

@@ -9,6 +9,7 @@ import { PageBody, PageHeader } from '@/components/shell/PageHeader.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { formatDateTime } from '@/lib/counsel/format.ts'
 import { DEMO_TEACHER_NAME } from '@/lib/counsel/identity.ts'
+import { chatbotPath } from '@/lib/counsel/paths.ts'
 
 const COLUMNS = ['상담상태', '상담방식', '상담일시', '상담제목', '상담 교사']
 
@@ -55,7 +56,7 @@ function StudentCounselPage() {
               {cases.map((c) => {
                 // 개인상담 건은 상세 화면이 아직 없어 열리지 않는다.
                 const openable = c.kind === 'chatbot'
-                const open = () => navigate(`/student/counsel/chatbot/${c.id}`)
+                const open = () => navigate(chatbotPath(c.id))
                 return (
                   <tr
                     key={c.id}

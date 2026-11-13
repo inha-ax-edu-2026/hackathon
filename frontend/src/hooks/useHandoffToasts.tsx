@@ -5,9 +5,8 @@ import type { CounselCase } from '@/api/counselTypes.ts'
 import { HandoffToast } from '@/components/counsel/HandoffToast.tsx'
 import { RISK_LABEL } from '@/lib/counsel/labels.ts'
 import { takeNewHandoffs } from '@/lib/counsel/notifications.ts'
+import { counselDetailPath } from '@/lib/counsel/paths.ts'
 import { maskName } from '@/lib/counsel/teacherView.ts'
-
-export const counselDetailPath = (id: string) => `/teacher/manage-apply/counsel/${id}`
 
 /**
  * 폴링으로 받은 목록에 새 전환 건이 생기면 토스트를 한 번 띄운다.
