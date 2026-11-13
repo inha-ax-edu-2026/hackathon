@@ -15,7 +15,6 @@ import { Button } from '@/components/ui/button.tsx'
 import { useVoiceInput } from '@/hooks/useVoiceInput.ts'
 import { ApiError } from '@/lib/api.ts'
 import { DEMO_LINES } from '@/lib/counsel/demoLines.ts'
-import { TEACHER_VISIBILITY_NOTICE } from '@/lib/counsel/labels.ts'
 import { VOICE_ERROR_MESSAGES } from '@/lib/counsel/voice.ts'
 import { cn } from '@/lib/utils.ts'
 
@@ -110,7 +109,7 @@ function ChatbotChatPage() {
         title={counselCase.title}
         description={
           open
-            ? `AI 챗봇과 이야기해요. ${TEACHER_VISIBILITY_NOTICE}.`
+            ? 'AI 챗봇과 이야기해요.'
             : counselCase.handoff
               ? '선생님께 전달된 상담이에요. 대화는 읽기만 할 수 있어요.'
               : '끝난 상담이에요. 대화는 읽기만 할 수 있어요.'

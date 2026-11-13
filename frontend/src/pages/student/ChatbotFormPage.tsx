@@ -15,7 +15,6 @@ import {
   QUESTIONS,
   TOPICS,
 } from '@/lib/counsel/form.ts'
-import { TEACHER_VISIBILITY_NOTICE } from '@/lib/counsel/labels.ts'
 
 const labelClass = 'mb-2 block text-sm font-medium'
 
@@ -126,10 +125,6 @@ function ChatbotFormPage() {
               onChange={(e) => patch({ wish: e.target.value })}
             />
           </div>
-
-          <p className="rounded-lg bg-muted px-4 py-3 text-sm text-secondary-foreground">
-            {TEACHER_VISIBILITY_NOTICE}
-          </p>
 
           {createCase.isError && (
             <p role="alert" className="text-sm text-destructive">
