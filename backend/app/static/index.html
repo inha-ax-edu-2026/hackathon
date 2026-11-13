@@ -60,7 +60,7 @@
   <div class="field-pair"><label>STT 모델<select id="sttInput"><option>stt-async-v6</option><option>stt-async-v5</option></select></label><label>TTS 모델<select id="ttsInput"><option>gemini-3.8-flash-tts</option><option>gemini-3.1-flash-tts-preview</option><option>gemini-2.5-flash-preview-tts</option><option>gemini-2.5-pro-preview-tts</option></select></label></div>
   <div class="banner">학교 목록은 v6를 제공하지만 공개 STT 문서는 v5를 설명합니다. 실제 v6 호출이 거절되면 v5로 설정해 새 상담을 시작하세요. 자동으로 모델을 바꾸지는 않습니다.</div>
   <p class="subtle" id="gatewayAddress"></p><div id="verifyResult" class="banner" role="status" hidden></div>
-  <div class="dialog-actions"><button class="button" id="verifySettings" type="button">저장·연결 확인</button> <button class="button primary" id="saveSettings" type="submit">설정 저장</button></div>
+  <div class="dialog-actions"><button class="button" id="verifySettings" type="button">저장·연결 확인</button><button class="button" id="verifyQuality" type="button">저장된 고성능 모델 응답 확인 · 사용량 발생</button> <button class="button primary" id="saveSettings" type="submit">설정 저장</button></div>
 </form></dialog>
 <dialog id="helpDialog"><div class="dialog-heading"><h2>선생님의 도움이 필요할 때</h2><button class="icon-button" id="helpClose" aria-label="닫기">×</button></div><p>AI의 권고와 관계없이 언제든 담당 선생님이나 학교 상담실에 직접 도움을 요청할 수 있어요.</p><p>지금 안전이 걱정된다면 상담 마무리를 기다리지 말고 안전한 장소에서 가까운 믿을 만한 어른과 함께 있어 주세요.</p><div class="banner">위험 발언 누적 3회 또는 즉시 위험 신호는 교사 확인함에 자동 등록됩니다. 교사가 확인하기까지 기다리지 말고 가까운 어른에게 직접 도움을 요청해 주세요. 외부 전화·문자·메신저 발송은 연결 전입니다.</div><button class="button primary" id="helpFinish">상담 요약 확인하기</button></dialog>
 </body>

@@ -2,7 +2,7 @@
 <html lang="ko">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SAFE-PATH · 교사 확인함</title><link rel="stylesheet" href="/static/style.css"><link rel="stylesheet" href="/static/reporting.css"><script src="/static/teacher.js" defer></script></head>
 <body class="teacher-page">
-<header class="topbar"><a class="brand" href="/teacher"><span class="brand-mark">S</span><span>SAFE-PATH<small>교사 확인함 · 상담 기록</small></span></a><div class="teacher-toolbar"><a class="button ghost" href="/">상담 화면</a><button class="button" id="refresh" disabled>새로고침</button><button class="button ghost" id="logout" hidden>나가기</button></div></header>
+<header class="topbar"><a class="brand" href="/teacher"><span class="brand-mark">S</span><span>SAFE-PATH<small>교사 확인함 · 상담 기록</small></span></a><div class="teacher-toolbar"><a class="button ghost" href="/">상담 화면</a><a class="button ghost" href="/document-demo">서류 초안 작업실</a><button class="button" id="refresh" disabled>새로고침</button><button class="button ghost" id="logout" hidden>나가기</button></div></header>
 <main class="teacher-content">
   <section class="page-heading"><div><span class="eyebrow">TEACHER DESK</span><h1>학생의 도움 신호를 확인하세요.</h1><p>서로 다른 위험 발언 누적 3회 또는 즉시 위험 신호는 상담 종료 전에 보고됩니다.</p></div><span class="local-badge"><span class="dot green"></span> 로컬 보고함</span></section>
   <form id="loginForm" class="card teacher-login"><h2>담당 교사 접속</h2><p>교사용 접속키로 보고와 상담 기록을 확인합니다. 접속키는 이 창의 메모리에만 두며 나가면 지웁니다.</p><label for="teacherKey">교사 접속키</label><input id="teacherKey" type="password" autocomplete="off" required placeholder="담당 교사용 접속키"><button class="button primary" id="loginButton" type="submit">확인함 열기</button></form>

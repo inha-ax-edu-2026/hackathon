@@ -26,6 +26,8 @@ from app.counsel import Counsel, router as counsel_router
 from app.gateway import Gateway
 from app.archive import ArchiveStore
 from app.teacher import router as teacher_router
+from app.frontend_demo import DemoStore, router as frontend_demo_router, quality_turn, require_quality_access
+from app.school_documents import init_documents, router as documents_router, audio_router
 
 STATIC_ROOT = Path(__file__).parent / "static"
 
@@ -72,6 +74,11 @@ def create_app(
             effective = replace(config, teacher_token=token)
         application.state.settings = effective
         application.state.archive = ArchiveStore(effective.database_path, effective.risk_threshold)
+        init_documents(application.state.archive)
+        application.state.frontend_demo = DemoStore(application.state.archive) if effective.frontend_demo_enabled else None
+        application.state.interview_jobs = {}
+        application.state.frontend_case_locks = {}
+        application.state.quality_probe_busy = False
         application.state.counsel = Counsel(application.state.archive)
         async with httpx.AsyncClient(
             timeout=config.timeout_seconds,
@@ -102,30 +109,34 @@ def create_app(
     application.state.settings = config
     application.state.counsel = None
     application.state.catalog_check = None
-    application.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]"])
+    application.add_middleware(TrustedHostMiddleware, allowed_hosts=list(config.allowed_hosts))
+    demo_origin = "https://hackathon-tau-mocha.vercel.app"
+    integration_origins = list(config.cors_origins) + ([demo_origin] if config.frontend_demo_enabled else [])
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=list(config.cors_origins),
-        allow_methods=["GET", "POST", "DELETE"],
-        allow_headers=["Content-Type", "X-Session-Token"],
+        allow_origins=integration_origins,
+        allow_methods=["GET", "POST", "PATCH", "DELETE"],
+        allow_headers=["Content-Type", "X-Session-Token", "X-Teacher-Key", "X-Audio-Consent", "X-Frontend-Access"],
     )
 
     @application.middleware("http")
     async def local_headers(request: Request, call_next):
         if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
             origin = request.headers.get("origin")
+            demo_path = request.url.path.startswith(("/api/student/counsel/", "/api/teacher/counsel/")) or request.url.path == "/api/demo/reset"
+            demo_cross_allowed = config.frontend_demo_enabled and demo_path and origin in integration_origins
             if origin:
                 parsed = urlsplit(origin)
-                if parsed.netloc != request.headers.get("host") or parsed.scheme != request.url.scheme:
+                if (parsed.netloc != request.headers.get("host") or parsed.scheme != request.url.scheme) and not demo_cross_allowed:
                     return JSONResponse({"detail": "같은 로컬 서버 화면에서 요청하세요."}, status_code=403)
-            if request.headers.get("sec-fetch-site") == "cross-site":
+            if request.headers.get("sec-fetch-site") == "cross-site" and not demo_cross_allowed:
                 return JSONResponse({"detail": "외부 사이트의 요청을 허용하지 않습니다."}, status_code=403)
         response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Permissions-Policy"] = "microphone=(self), camera=()"
-        if request.url.path in {"/", "/teacher"} or request.url.path.startswith("/static/"):
+        if request.url.path in {"/", "/teacher", "/document-demo"} or request.url.path.startswith("/static/"):
             response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; media-src 'self' blob:; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
         return response
 
@@ -141,6 +152,9 @@ def create_app(
 
     application.include_router(counsel_router)
     application.include_router(teacher_router)
+    application.include_router(frontend_demo_router)
+    application.include_router(documents_router)
+    application.include_router(audio_router)
     application.mount("/static", StaticFiles(directory=STATIC_ROOT), name="static")
 
     @application.get("/", include_in_schema=False)
@@ -150,6 +164,10 @@ def create_app(
     @application.get("/teacher", include_in_schema=False)
     async def teacher_page():
         return FileResponse(STATIC_ROOT / "teacher.html")
+
+    @application.get("/document-demo", include_in_schema=False)
+    async def document_page():
+        return FileResponse(STATIC_ROOT / "documents.html")
 
     @application.get("/api/local/settings", summary="API 키 존재 여부·모델 설정 (키 반환 없음)")
     async def local_settings():
@@ -199,12 +217,32 @@ def create_app(
             application.state.catalog_check = result
         return result
 
+    @application.post("/api/local/verify-quality", summary="저장된 고성능 모델 한 개로 가상 상담 응답 확인 (사용량 발생)")
+    async def verify_quality(request: Request):
+        require_quality_access(request)
+        if application.state.quality_probe_busy:
+            raise HTTPException(429, "고성능 모델 응답을 확인 중입니다.")
+        application.state.quality_probe_busy = True
+        try:
+            current = application.state.settings
+            snapshot = {"model": current.quality_model, "form": {"topic":"가상 연결 점검","answers":[]},
+                "messages":[{"role":"student","text":"가상 상담 테스트입니다. 친구에게 먼저 말을 거는 것이 어색해서 고민이에요."}]}
+            result, usage = await quality_turn(request, snapshot, snapshot["messages"][0]["text"])
+            return {"inference_verified": True, "model": current.quality_model, "reply": result.reply, "usage": usage,
+                "message":"고성능 모델의 실제 응답과 JSON·인용 검증을 확인했습니다. 상담 성능이나 안전성 검증을 뜻하지 않습니다."}
+        finally:
+            application.state.quality_probe_busy = False
+
     @application.get("/health", summary="서버 및 설정 상태 확인")
     async def health():
         current = application.state.settings
         return {
             "status": "ok",
             "counsel_contract": "archive-report-v1",
+            "integration_contract": "document-demo-v1",
+            "frontend_demo_enabled": current.frontend_demo_enabled,
+            "frontend_ai_mode": current.frontend_ai_mode,
+            "quality_model": current.quality_model,
             "teacher_inbox_configured": bool(current.teacher_token),
             "ai_mode": current.mode,
             "baze_configured": not current.missing_settings,

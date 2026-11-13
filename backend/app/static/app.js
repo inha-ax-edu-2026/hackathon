@@ -384,6 +384,16 @@ async function saveConfiguration(verify = false) {
   } catch (error) { $('apiKey').value = ''; if (verify) { $('verifyResult').hidden = false; $('verifyResult').textContent = error.message; } toast(error.message, true); }
   finally { $('saveSettings').disabled = $('verifySettings').disabled = false; }
 }
+$('verifyQuality').addEventListener('click', async () => {
+  $('verifyQuality').disabled = $('saveSettings').disabled = $('verifySettings').disabled = true;
+  $('verifyResult').hidden = false;
+  $('verifyResult').textContent = '저장된 고성능 모델 하나로 가상 상담 응답을 확인하고 있습니다…';
+  try {
+    const result = await api('/api/local/verify-quality', {method:'POST'});
+    $('verifyResult').replaceChildren(node('strong', '', `${result.model} · 실제 응답 확인`), node('p', '', result.reply), node('div', '', result.message));
+  } catch (error) { $('verifyResult').textContent = error.message; }
+  finally { $('verifyQuality').disabled = $('saveSettings').disabled = $('verifySettings').disabled = false; }
+});
 $('settingsForm').addEventListener('submit', event => { event.preventDefault(); saveConfiguration(); });
 $('verifySettings').addEventListener('click', () => saveConfiguration(true));
 $('consentCheck').addEventListener('change', controls); $('modeSelect').addEventListener('change', modeBanner);

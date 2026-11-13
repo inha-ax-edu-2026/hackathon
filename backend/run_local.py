@@ -22,7 +22,7 @@ def status(url):
             body = json.load(response)
         if not isinstance(body, dict) or body.get("status") != "ok" or "counsel_key_configured" not in body:
             return 0
-        return 2 if body.get("counsel_contract") == "archive-report-v1" else 1
+        return 2 if body.get("counsel_contract") == "archive-report-v1" and body.get("integration_contract") == "document-demo-v1" else 1
     except (OSError, ValueError, urllib.error.URLError):
         return 0
 
@@ -96,6 +96,7 @@ def main():
             if status(url) == 2:
                 print("비교 화면:", url)
                 print("교사 확인함:", url + "teacher")
+                print("서류 초안 작업실:", url + "document-demo")
                 print("교사 접근키: backend/.env의 TEACHER_ACCESS_TOKEN 값 (브라우저에서 입력)")
                 print("이 창을 유지하세요. 서버 종료: Ctrl+C")
                 if not args.no_browser:

@@ -65,6 +65,22 @@ class TurnOutput(StrictModel):
     assessment: Assessment
 
 
+def validated_turn(raw, user_texts, current_text):
+    """비교실과 프론트 단일 모델이 같은 출력·인용 검증을 사용한다."""
+    output = TurnOutput.model_validate_json(raw)
+    if any(not any(e in t for t in user_texts) for e in output.assessment.evidence):
+        raise ValueError("근거 인용 불일치")
+    a = output.assessment
+    if (a.referral == "urgent") != (a.urgency == "immediate"):
+        raise ValueError("긴급성 불일치")
+    if a.risk_language:
+        if a.risk_kind == "none" or not a.risk_evidence or any(e not in current_text for e in a.risk_evidence):
+            raise ValueError("현재 위험 발언의 근거 불일치")
+    elif a.risk_kind != "none" or a.risk_evidence:
+        raise ValueError("위험 언어 출력 불일치")
+    return output
+
+
 class StartRequest(StrictModel):
     mode: Literal["mock", "baze"]
     consent: Literal[True]
@@ -188,18 +204,8 @@ class Counsel:
                         history.append({"role": "assistant", "content": previous["reply"]})
                 history.append({"role": "user", "content": text})
                 raw, usage = await session.gateway.chat(session.models[variant], history, TurnOutput.model_json_schema())
-                output = TurnOutput.model_validate_json(raw)
                 user_texts = [turn["text"] for turn in session.turns] + [text]
-                if any(not any(e in t for t in user_texts) for e in output.assessment.evidence):
-                    raise ValueError("근거 인용 불일치")
-                a = output.assessment
-                if (a.referral == "urgent") != (a.urgency == "immediate"):
-                    raise ValueError("긴급성 불일치")
-                if a.risk_language:
-                    if a.risk_kind == "none" or not a.risk_evidence or any(e not in text for e in a.risk_evidence):
-                        raise ValueError("현재 위험 발언의 근거 불일치")
-                elif a.risk_kind != "none" or a.risk_evidence:
-                    raise ValueError("위험 언어 출력 불일치")
+                output = validated_turn(raw, user_texts, text)
             return {"status": "ok", "model": session.models[variant], "mode": session.mode,
                 **output.model_dump(), "elapsed_ms": round((time.perf_counter() - started) * 1000), "usage": usage}
         except HTTPException as exc:

@@ -2,6 +2,7 @@
 
 import math
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -29,6 +30,10 @@ class Settings:
     teacher_token: str = field(default="", repr=False)
     database_path: Path = BACKEND_ROOT / "data" / "safepath.sqlite3"
     risk_threshold: int = 3
+    frontend_demo_enabled: bool = False
+    frontend_ai_mode: str = "mock"
+    frontend_access_token: str = field(default="", repr=False)
+    allowed_hosts: tuple[str, ...] = ("127.0.0.1", "localhost", "[::1]")
     cors_origins: tuple[str, ...] = (
         "http://localhost:5173",
         "http://127.0.0.1:5173",
@@ -37,6 +42,10 @@ class Settings:
     def __post_init__(self) -> None:
         if self.mode not in {"mock", "baze"}:
             raise ValueError("AI_MODE는 mock 또는 baze로 설정하세요.")
+        if self.frontend_ai_mode not in {"mock", "baze"}:
+            raise ValueError("FRONTEND_AI_MODE는 mock 또는 baze로 설정하세요.")
+        if self.frontend_access_token and len(self.frontend_access_token) < 24:
+            raise ValueError("FRONTEND_ACCESS_TOKEN은 24자 이상이어야 합니다.")
         parsed = urlsplit(self.base_url)
         if (
             parsed.scheme not in {"https", "http"}
@@ -55,6 +64,8 @@ class Settings:
             raise ValueError("현재 교사 보고 기준은 서로 다른 위험 발언 3회입니다.")
         if self.teacher_token and len(self.teacher_token) < 16:
             raise ValueError("TEACHER_ACCESS_TOKEN은 16자 이상이어야 합니다.")
+        if not self.allowed_hosts or any(not re.fullmatch(r"[a-zA-Z0-9.\[\]:-]+", host) for host in self.allowed_hosts):
+            raise ValueError("ALLOWED_HOSTS에는 접속할 호스트 이름만 쉼표로 구분해 입력하세요.")
         if not Path(self.database_path).resolve().is_relative_to(BACKEND_ROOT.resolve()):
             raise ValueError("상담 데이터베이스는 backend 폴더 안에 두세요.")
 
@@ -102,6 +113,10 @@ class Settings:
             tts_model=read("BAZE_TTS_MODEL", defaults.tts_model),
             tts_voice=read("BAZE_TTS_VOICE", defaults.tts_voice),
             teacher_token=read("TEACHER_ACCESS_TOKEN"),
+            frontend_demo_enabled=read("FRONTEND_DEMO_ENABLED", "false").lower() == "true",
+            frontend_ai_mode=read("FRONTEND_AI_MODE", "mock"),
+            frontend_access_token=read("FRONTEND_ACCESS_TOKEN"),
+            allowed_hosts=tuple(h.strip() for h in read("ALLOWED_HOSTS", ",".join(defaults.allowed_hosts)).split(",") if h.strip()),
             database_path=BACKEND_ROOT / read("COUNSEL_DATABASE_PATH", "data/safepath.sqlite3"),
             cors_origins=tuple(origin.strip() for origin in origins.split(",") if origin.strip()),
         )
