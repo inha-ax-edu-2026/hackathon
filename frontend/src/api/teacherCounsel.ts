@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { CaseResponse, TeacherCaseDetailResponse } from '@/api/counselTypes.ts'
+import type {
+  CaseListResponse,
+  CaseResponse,
+  TeacherCaseDetailResponse,
+} from '@/api/counselTypes.ts'
 import { ApiError, apiFetch } from '@/lib/api.ts'
 
 /**
@@ -9,6 +13,28 @@ import { ApiError, apiFetch } from '@/lib/api.ts'
  */
 
 const BASE = '/api/teacher/counsel/cases'
+
+/* ── 목록 (07) ── */
+
+/** 교사 목록 query key. 접두어가 `['teacherCounsel']`이라 쓰기 훅의 무효화로 목록과 종 배지가 따라온다. */
+export const teacherCasesKey = ['teacherCounsel', 'cases'] as const
+
+/** 학생 탭의 전환을 교사 탭이 알아차리는 폴링 간격(ms). */
+export const TEACHER_CASES_POLL_MS = 1500
+
+/** 「개인상담 관리」 목록. 최신순이고 진행 중인 챗봇 상담 건은 서버가 뺀다. 약 1.5초마다 다시 부른다. */
+export function useTeacherCases() {
+  return useQuery({
+    queryKey: teacherCasesKey,
+    queryFn: () => apiFetch<CaseListResponse>(BASE),
+    select: (data) => data.cases,
+    refetchInterval: TEACHER_CASES_POLL_MS,
+    // 학생 탭과 교사 탭을 나란히 띄운 시연에서 가려진 탭도 알림을 받아야 한다.
+    refetchIntervalInBackground: true,
+    // 기본 staleTime(30초)이면 화면을 옮겨 다닐 때 낡은 목록이 보인다.
+    staleTime: 0,
+  })
+}
 
 /* ── 상세·읽음·승인 (08) ── */
 
