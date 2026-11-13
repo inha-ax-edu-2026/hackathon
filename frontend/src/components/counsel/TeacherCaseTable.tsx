@@ -14,12 +14,21 @@ import { counselDetailPath } from '@/lib/counsel/paths.ts'
 import { maskedStudentLabel, scheduleLabel, splitTitle } from '@/lib/counsel/teacherView.ts'
 import { cn } from '@/lib/utils.ts'
 
+/**
+ * 상담유형 칩 색. 종류는 개인상담·AI 챗봇 상담 두 가지뿐이다.
+ * 전환 여부는 상담상태(승인대기)·읽지 않음 점·위험도가 이미 알려 주고, 전환 사유는 상세에서 본다.
+ */
 const CHIP_CLASS = {
   'AI 챗봇': 'bg-primary-soft text-primary',
   개인상담: 'bg-secondary text-secondary-foreground',
 } as const
 
-/** 「개인상담 관리」 표. 기존 4열(상담상태·상담예약일시·상담제목·상담 대상자) 그대로, 행을 누르면 상세로 간다. */
+const COLUMNS = ['상담상태', '상담유형', '상담제목', '위험도', '상담예약일시', '상담 대상자']
+
+/**
+ * 「개인상담 관리」 표. 기존 4열에서 상담유형·위험도를 따로 떼어 제목 칸에 몰리지 않게 했다.
+ * 행을 누르면 상세로 간다.
+ */
 export function TeacherCaseTable({ cases }: { cases: CounselCase[] }) {
   const navigate = useNavigate()
 
@@ -28,8 +37,14 @@ export function TeacherCaseTable({ cases }: { cases: CounselCase[] }) {
       <Table>
         <TableHeader>
           <TableRow className="h-12 bg-card hover:bg-card">
-            {['상담상태', '상담예약일시', '상담제목', '상담 대상자'].map((label) => (
-              <TableHead key={label} className="px-6 font-medium text-muted-foreground">
+            {COLUMNS.map((label) => (
+              <TableHead
+                key={label}
+                className={cn(
+                  'px-6 font-medium text-muted-foreground',
+                  label === '위험도' && 'text-center',
+                )}
+              >
                 {label}
               </TableHead>
             ))}
@@ -52,16 +67,14 @@ export function TeacherCaseTable({ cases }: { cases: CounselCase[] }) {
                 <TableCell className="px-6 py-4">
                   <StatusBadge status={c.status} />
                 </TableCell>
-                <TableCell className="px-6 py-4">{scheduleLabel(c)}</TableCell>
                 <TableCell className="px-6 py-4">
+                  <Badge className={cn('rounded-md', CHIP_CLASS[chip as keyof typeof CHIP_CLASS])}>
+                    {chip}
+                  </Badge>
+                </TableCell>
+                <TableCell className="w-full px-6 py-4">
                   <span className="flex items-center gap-2">
-                    <Badge
-                      className={cn('rounded-md', CHIP_CLASS[chip as keyof typeof CHIP_CLASS])}
-                    >
-                      {chip}
-                    </Badge>
                     <span className={cn(isNew && 'font-semibold')}>{text}</span>
-                    {c.risk && <RiskBadge risk={c.risk} />}
                     {isNew && (
                       <span
                         role="img"
@@ -71,6 +84,14 @@ export function TeacherCaseTable({ cases }: { cases: CounselCase[] }) {
                     )}
                   </span>
                 </TableCell>
+                <TableCell className="px-6 py-4 text-center">
+                  {c.risk ? (
+                    <RiskBadge risk={c.risk} />
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
+                </TableCell>
+                <TableCell className="px-6 py-4">{scheduleLabel(c)}</TableCell>
                 <TableCell className="px-6 py-4 underline underline-offset-2">
                   {maskedStudentLabel(c.student)}
                 </TableCell>
