@@ -131,9 +131,50 @@ export type TeacherCaseDetailResponse = {
   summary: string | null
   /** 개인상담 시드는 null. */
   form: CounselForm | null
-  /** 사후 서류. 03번 티켓에서 모양을 정한다. */
-  documents: null
+  /** 사후 서류. 전환된 건에만 있고, 종료 건·개인상담 시드는 null. */
+  documents: CaseDocuments | null
 }
+
+// ── 사후 서류 (명세 「사후 서류」, 제안서 7절) ──
+
+/** 서류 종류 4종. 화면 순서도 이 순서다. */
+export type DocumentKind = 'counsel_log' | 'student_record' | 'parent_notice' | 'crisis_report'
+
+/** 서류 하나. 추천 여부·근거는 위험도 규칙이 정하고(AI가 아님), 선택·본문·승인은 교사가 바꾼다. */
+export type CounselDocument = {
+  kind: DocumentKind
+  /** 서류 이름. 예: 「상담일지」 */
+  title: string
+  /** 받는 대상. 예: 「교사 보관용」 */
+  audience: string
+  recommended: boolean
+  /** 추천 여부의 근거 한 줄. 추천하지 않을 때도 이유를 준다. */
+  recommend_reason: string
+  /** 초안 본문. 전환 시점에 만들어지고 교사가 고칠 수 있다. */
+  draft: string
+  /** 교사가 고른 서류인지. 처음에는 recommended와 같다. */
+  selected: boolean
+  /** 교사가 검토 완료로 승인했는지. 본문을 고치면 다시 false가 된다. */
+  approved: boolean
+}
+
+export type CaseDocuments = {
+  /** 4종 모두, 고정 순서. */
+  items: CounselDocument[]
+  /** 절감 분 = 선택한 서류 수 × (manual − review). 승인 여부와 무관하다. */
+  saved_minutes: number
+  /** 절감 근거(가정치): 서류 하나를 직접 쓰면 8분, 초안을 검토하면 1분. */
+  manual_minutes_per_document: number
+  review_minutes_per_document: number
+  /** 선택한 서류가 1개 이상이고 모두 승인되었는지. 화면의 「승인 완료」. */
+  all_approved: boolean
+}
+
+/** PATCH /api/teacher/counsel/cases/{id}/documents/{kind}. 둘 다 선택 사항이고 하나는 있어야 한다. */
+export type UpdateDocumentRequest = { selected?: boolean; draft?: string }
+
+/** PATCH .../documents/{kind} · POST .../documents/{kind}/approve */
+export type DocumentsResponse = { documents: CaseDocuments }
 
 /** POST /api/teacher/counsel/cases/{id}/read · .../approve */
 export type CaseResponse = { case: CounselCase }
