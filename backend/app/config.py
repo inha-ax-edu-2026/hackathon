@@ -33,6 +33,8 @@ class Settings:
     frontend_demo_enabled: bool = False
     frontend_ai_mode: str = "mock"
     frontend_access_token: str = field(default="", repr=False)
+    shared_server_mode: bool = False
+    public_base_url: str = ""
     allowed_hosts: tuple[str, ...] = ("127.0.0.1", "localhost", "[::1]")
     cors_origins: tuple[str, ...] = (
         "http://localhost:5173",
@@ -46,6 +48,18 @@ class Settings:
             raise ValueError("FRONTEND_AI_MODE는 mock 또는 baze로 설정하세요.")
         if self.frontend_access_token and len(self.frontend_access_token) < 24:
             raise ValueError("FRONTEND_ACCESS_TOKEN은 24자 이상이어야 합니다.")
+        if self.public_base_url:
+            public = urlsplit(self.public_base_url)
+            if (public.scheme != "https" or not public.hostname or public.username or public.password
+                    or public.port not in {None, 443} or public.path not in {"", "/"} or public.query or public.fragment):
+                raise ValueError("PUBLIC_BASE_URL에는 경로 없는 HTTPS 서버 주소를 입력하세요.")
+        if self.shared_server_mode:
+            if not self.public_base_url or not self.frontend_demo_enabled:
+                raise ValueError("공유 서버에는 PUBLIC_BASE_URL과 FRONTEND_DEMO_ENABLED=true가 필요합니다.")
+            if not self.frontend_access_token or not self.teacher_token:
+                raise ValueError("공유 서버에는 프론트 연동키와 교사 접속키가 모두 필요합니다.")
+            if self.frontend_ai_mode == "baze" and not self.api_key:
+                raise ValueError("실제 고성능 모델 공유 서버에는 BAZE_API_KEY가 필요합니다.")
         parsed = urlsplit(self.base_url)
         if (
             parsed.scheme not in {"https", "http"}
@@ -116,6 +130,8 @@ class Settings:
             frontend_demo_enabled=read("FRONTEND_DEMO_ENABLED", "false").lower() == "true",
             frontend_ai_mode=read("FRONTEND_AI_MODE", "mock"),
             frontend_access_token=read("FRONTEND_ACCESS_TOKEN"),
+            shared_server_mode=read("SHARED_SERVER_MODE", "false").lower() == "true",
+            public_base_url=read("PUBLIC_BASE_URL").rstrip("/"),
             allowed_hosts=tuple(h.strip() for h in read("ALLOWED_HOSTS", ",".join(defaults.allowed_hosts)).split(",") if h.strip()),
             database_path=BACKEND_ROOT / read("COUNSEL_DATABASE_PATH", "data/safepath.sqlite3"),
             cors_origins=tuple(origin.strip() for origin in origins.split(",") if origin.strip()),

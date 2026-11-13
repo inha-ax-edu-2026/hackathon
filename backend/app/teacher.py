@@ -2,10 +2,14 @@
 
 import secrets
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.security import APIKeyHeader
 
 
-async def require_teacher(request: Request, x_teacher_key: str = Header(default="")):
+teacher_access_header = APIKeyHeader(name="X-Teacher-Key", scheme_name="TeacherAccess", auto_error=False)
+
+
+async def require_teacher(request: Request, x_teacher_key: str | None = Depends(teacher_access_header)):
     expected = request.app.state.settings.teacher_token
     if not expected:
         raise HTTPException(503, "교사 접속키가 설정되지 않았습니다. 서버 설정을 확인하세요.")

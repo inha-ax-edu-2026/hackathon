@@ -102,8 +102,9 @@ def create_app(
                     application.state.counsel.remove(sid)
 
     application = FastAPI(
-        title="SAFE-PATH 녹음형 상담 비교",
-        description="고품질형과 가성비형의 익명 AI 사전 상담을 비교합니다.",
+        title="SAFE-PATH 팀 테스트 API" if config.shared_server_mode else "SAFE-PATH 녹음형 상담 비교",
+        description="가상 자료 전용 고성능 상담·요약·서류 초안 API. Authorize에서 연동키/교사키를 입력하세요." if config.shared_server_mode else "고품질형과 가성비형의 익명 AI 사전 상담을 비교합니다.",
+        servers=[{"url": config.public_base_url}] if config.shared_server_mode else None,
         lifespan=lifespan,
     )
     application.state.settings = config
@@ -121,15 +122,18 @@ def create_app(
 
     @application.middleware("http")
     async def local_headers(request: Request, call_next):
+        if config.shared_server_mode and (request.url.path.startswith("/api/local/") or request.url.path == "/api/ai/generate"):
+            return JSONResponse({"detail": "공유 서버에서는 로컬 설정·범용 생성 API를 제공하지 않습니다."}, status_code=404)
         if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
             origin = request.headers.get("origin")
             demo_path = request.url.path.startswith(("/api/student/counsel/", "/api/teacher/counsel/")) or request.url.path == "/api/demo/reset"
             demo_cross_allowed = config.frontend_demo_enabled and demo_path and origin in integration_origins
+            public_same_origin = bool(config.shared_server_mode and origin == config.public_base_url)
             if origin:
                 parsed = urlsplit(origin)
-                if (parsed.netloc != request.headers.get("host") or parsed.scheme != request.url.scheme) and not demo_cross_allowed:
+                if (parsed.netloc != request.headers.get("host") or parsed.scheme != request.url.scheme) and not demo_cross_allowed and not public_same_origin:
                     return JSONResponse({"detail": "같은 로컬 서버 화면에서 요청하세요."}, status_code=403)
-            if request.headers.get("sec-fetch-site") == "cross-site" and not demo_cross_allowed:
+            if request.headers.get("sec-fetch-site") == "cross-site" and not demo_cross_allowed and not public_same_origin:
                 return JSONResponse({"detail": "외부 사이트의 요청을 허용하지 않습니다."}, status_code=403)
         response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"
@@ -150,7 +154,8 @@ def create_app(
     async def storage_error(request, exc):
         return JSONResponse({"detail": "상담 기록을 저장하거나 읽지 못했습니다. 보고 완료로 간주하지 말고 담당 교사에게 직접 도움을 요청하세요."}, status_code=503)
 
-    application.include_router(counsel_router)
+    if not config.shared_server_mode:
+        application.include_router(counsel_router)
     application.include_router(teacher_router)
     application.include_router(frontend_demo_router)
     application.include_router(documents_router)
@@ -159,7 +164,7 @@ def create_app(
 
     @application.get("/", include_in_schema=False)
     async def index():
-        return FileResponse(STATIC_ROOT / "index.html")
+        return FileResponse(STATIC_ROOT / ("shared.html" if config.shared_server_mode else "index.html"))
 
     @application.get("/teacher", include_in_schema=False)
     async def teacher_page():
@@ -169,7 +174,7 @@ def create_app(
     async def document_page():
         return FileResponse(STATIC_ROOT / "documents.html")
 
-    @application.get("/api/local/settings", summary="API 키 존재 여부·모델 설정 (키 반환 없음)")
+    @application.get("/api/local/settings", include_in_schema=not config.shared_server_mode, summary="API 키 존재 여부·모델 설정 (키 반환 없음)")
     async def local_settings():
         cfg = application.state.settings
         return {"api_key_present": bool(cfg.api_key), "default_mode": cfg.mode,
@@ -178,7 +183,7 @@ def create_app(
             "base_url": cfg.base_url, "real_api_verified": False,
             "catalog_check": application.state.catalog_check}
 
-    @application.post("/api/local/settings", summary="이 PC의 .env에 API 키·모델 저장")
+    @application.post("/api/local/settings", include_in_schema=not config.shared_server_mode, summary="이 PC의 .env에 API 키·모델 저장")
     async def save_local_settings(body: LocalSettingsRequest, request: Request):
         if not request.client or request.client.host not in {"127.0.0.1", "::1"}:
             raise HTTPException(403, "API 설정은 이 PC에서만 변경할 수 있습니다.")
@@ -205,7 +210,7 @@ def create_app(
         application.state.catalog_check = None
         return {"saved": True, "api_key_present": bool(new.api_key), "applies_to": "new_sessions"}
 
-    @application.post("/api/local/verify", summary="저장된 키로 BAZE 모델 목록·프리셋 확인 (상담 생성 없음)")
+    @application.post("/api/local/verify", include_in_schema=not config.shared_server_mode, summary="저장된 키로 BAZE 모델 목록·프리셋 확인 (상담 생성 없음)")
     async def verify_local_settings(request: Request):
         if not request.client or request.client.host not in {"127.0.0.1", "::1"}:
             raise HTTPException(403, "연결 확인은 이 PC에서만 할 수 있습니다.")
@@ -217,7 +222,7 @@ def create_app(
             application.state.catalog_check = result
         return result
 
-    @application.post("/api/local/verify-quality", summary="저장된 고성능 모델 한 개로 가상 상담 응답 확인 (사용량 발생)")
+    @application.post("/api/local/verify-quality", include_in_schema=not config.shared_server_mode, summary="저장된 고성능 모델 한 개로 가상 상담 응답 확인 (사용량 발생)")
     async def verify_quality(request: Request):
         require_quality_access(request)
         if application.state.quality_probe_busy:
@@ -238,6 +243,7 @@ def create_app(
         current = application.state.settings
         return {
             "status": "ok",
+            "shared_server_mode": current.shared_server_mode,
             "counsel_contract": "archive-report-v1",
             "integration_contract": "document-demo-v1",
             "frontend_demo_enabled": current.frontend_demo_enabled,
@@ -252,6 +258,7 @@ def create_app(
 
     @application.post(
         "/api/ai/generate",
+        include_in_schema=not config.shared_server_mode,
         response_model=GenerateResponse,
         summary="설정된 모델에 텍스트 요청 보내기",
     )

@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError, model_validator
 
 from app.archive import encode, decode, now
@@ -77,16 +78,19 @@ def teacher_visible(stored):
     return c["kind"] == "individual" or c["handoff"] is not None
 
 
-async def enabled(request: Request):
+frontend_access_header = APIKeyHeader(name="X-Frontend-Access", scheme_name="FrontendAccess", auto_error=False)
+
+
+async def enabled(request: Request, access: str | None = Depends(frontend_access_header)):
     if not request.app.state.settings.frontend_demo_enabled:
         raise HTTPException(503, "프론트 연동 데모가 꺼져 있습니다. FRONTEND_DEMO_ENABLED=true로 설정하고 재시작하세요. 실제 학생 자료는 사용하지 마세요.")
-    if request.app.state.settings.frontend_ai_mode == "baze":
+    if request.app.state.settings.shared_server_mode or request.app.state.settings.frontend_ai_mode == "baze":
         require_quality_access(request)
 
 
 def require_quality_access(request):
     """로컬 시연은 그대로 쓰고, 공용 서버에서 익명으로 유료 호출하는 것은 막는다."""
-    if request.client and request.client.host in {"127.0.0.1", "::1", "localhost"}:
+    if not request.app.state.settings.shared_server_mode and request.client and request.client.host in {"127.0.0.1", "::1", "localhost"}:
         return
     expected = request.app.state.settings.frontend_access_token
     actual = request.headers.get("X-Frontend-Access", "")

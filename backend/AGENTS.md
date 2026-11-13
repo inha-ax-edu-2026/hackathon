@@ -36,3 +36,4 @@
 - 외부 호출 어댑터를 수정할 때는 정상 응답 외에 인증 실패·요청 제한·시간 초과·잘못된 응답을 확인한다.
 
 - 외부 배포에서 유료 프론트 API를 호출하려면 서버용 `FRONTEND_ACCESS_TOKEN`에 맞는 `X-Frontend-Access` 인증이 필요하다. 키를 `VITE_*`·URL에 넣지 않는다. 로컬 가상 시연은 loopback에서 허용한다.
+- 공유 앱 `app.shared:create_shared_app`는 loopback 예외 없이 인증하며 로컬 설정·범용 생성·두 모델 비교 API를 공개하지 않는다. 별도 `.env.shared`와 `data/shared.sqlite3`를 사용한다. Windows 공유 실행은 `start_shared.cmd`, 배포·프론트 연결 안내는 `docs/SHARED_SERVER.md`가 기준이다.
