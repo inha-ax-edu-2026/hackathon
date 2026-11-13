@@ -7,6 +7,7 @@
 - React 19 + TypeScript + Vite
 - 포맷·린트: Biome (`biome.json`) — Prettier·ESLint 대신 사용. 2칸 들여쓰기, 작은따옴표, 세미콜론 생략, 줄 너비 100
 - 서버 상태·API 호출: TanStack Query v5 (+ 개발 모드 Devtools)
+- 스타일: Tailwind CSS v4 (`@tailwindcss/vite` 플러그인, 설정 파일 없이 `src/index.css`의 `@import 'tailwindcss'`로 로드). 커스텀 토큰은 같은 파일의 `@theme`에 추가한다
 - 패키지 매니저: npm (`package-lock.json` 커밋)
 
 ## 명령어
