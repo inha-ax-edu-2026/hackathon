@@ -107,6 +107,18 @@ describe('교사 목록', () => {
     const times = cases.map((c) => Date.parse(c.updated_at))
     expect(times).toEqual([...times].sort((a, b) => b - a))
   })
+
+  it('알림 대상(전환됐고 읽지 않음)은 전환 건뿐이다: 시드·종료 건은 handoff가 없다', async () => {
+    const handed = await handedOff('medium')
+    const done = await finished()
+
+    const { cases } = await teacherCases()
+    const unread = cases.filter((c) => c.handoff !== null && !c.read).map((c) => c.id)
+
+    expect(unread).toEqual([handed])
+    expect(cases.find((c) => c.id === done)?.handoff).toBeNull()
+    expect(cases.filter((c) => c.kind === 'individual').every((c) => c.handoff === null)).toBe(true)
+  })
 })
 
 describe('교사 상세', () => {
