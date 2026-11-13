@@ -13,6 +13,7 @@ import { ExampleSentence } from '@/components/counsel/ExampleSentence.tsx'
 import { HandoffNotice, handoffNoticeIndex } from '@/components/counsel/HandoffNotice.tsx'
 import { MessageBubble, MessageList } from '@/components/counsel/MessageList.tsx'
 import { MicButton } from '@/components/counsel/MicButton.tsx'
+import { PrivacyNotice } from '@/components/counsel/PrivacyNotice.tsx'
 import { TypingIndicator } from '@/components/counsel/TypingIndicator.tsx'
 import { PageBody, PageHeader } from '@/components/shell/PageHeader.tsx'
 import { Button } from '@/components/ui/button.tsx'
@@ -168,6 +169,10 @@ function ChatbotChatPage() {
               open ? 'h-[calc(100svh-330px)]' : 'h-[calc(100svh-480px)]',
             )}
           >
+            {/* 대화에 들어오자마자 보이도록 맨 위에 둔다. 알림 안내 카드처럼 가운데 카드로. */}
+            <div className="flex justify-center pb-4">
+              <PrivacyNotice className="w-full max-w-md" />
+            </div>
             <MessageList
               messages={messages}
               insert={

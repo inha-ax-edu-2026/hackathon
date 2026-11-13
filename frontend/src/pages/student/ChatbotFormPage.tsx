@@ -2,6 +2,7 @@ import { useId, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useCreateCase } from '@/api/studentCounsel.ts'
 import { OptionChip } from '@/components/counsel/OptionChip.tsx'
+import { PrivacyNotice } from '@/components/counsel/PrivacyNotice.tsx'
 import { PageBody, PageHeader } from '@/components/shell/PageHeader.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { Textarea } from '@/components/ui/textarea.tsx'
@@ -125,6 +126,8 @@ function ChatbotFormPage() {
               onChange={(e) => patch({ wish: e.target.value })}
             />
           </div>
+
+          <PrivacyNotice />
 
           {createCase.isError && (
             <p role="alert" className="text-sm text-destructive">
