@@ -187,7 +187,8 @@ function ChatbotChatPage() {
                   setDraft(value)
                 }}
                 onSubmit={send}
-                disabled={busy}
+                // 응답을 기다리는 동안에도 입력창·예시 문장·말하기는 그대로 두고 보내기만 막는다.
+                sending={busy}
                 suggestions={
                   <ExampleSentence
                     text={DEMO_LINES[studentTurns % DEMO_LINES.length]}
@@ -195,7 +196,6 @@ function ChatbotChatPage() {
                       voice.cancel()
                       setDraft(text)
                     }}
-                    disabled={busy}
                   />
                 }
                 actions={
@@ -203,7 +203,6 @@ function ChatbotChatPage() {
                     listening={voice.listening}
                     onStart={() => voice.start(draft)}
                     onStop={voice.stop}
-                    disabled={busy}
                   />
                 }
               />
