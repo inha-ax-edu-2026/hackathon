@@ -5,13 +5,18 @@ import { useFinishCase, useHandoff, useSendMessage, useStudentCase } from '@/api
 import { CaseStatusBadge } from '@/components/counsel/CaseStatusBadge.tsx'
 import { ChatClosedNotice } from '@/components/counsel/ChatClosedNotice.tsx'
 import { ChatComposer } from '@/components/counsel/ChatComposer.tsx'
+import { ExampleSentence } from '@/components/counsel/ExampleSentence.tsx'
 import { FinishConfirmDialog } from '@/components/counsel/FinishConfirmDialog.tsx'
 import { MessageBubble, MessageList } from '@/components/counsel/MessageList.tsx'
+import { MicButton } from '@/components/counsel/MicButton.tsx'
 import { TypingIndicator } from '@/components/counsel/TypingIndicator.tsx'
 import { PageBody, PageHeader } from '@/components/shell/PageHeader.tsx'
 import { Button } from '@/components/ui/button.tsx'
+import { useVoiceInput } from '@/hooks/useVoiceInput.ts'
 import { ApiError } from '@/lib/api.ts'
+import { DEMO_LINES } from '@/lib/counsel/demoLines.ts'
 import { TEACHER_VISIBILITY_NOTICE } from '@/lib/counsel/labels.ts'
+import { VOICE_ERROR_MESSAGES } from '@/lib/counsel/voice.ts'
 import { cn } from '@/lib/utils.ts'
 
 const BACK = (
@@ -39,6 +44,8 @@ function ChatbotChatPage() {
   const finish = useFinishCase(id)
   const [draft, setDraft] = useState('')
   const [finishOpen, setFinishOpen] = useState(false)
+  // 음성은 입력창만 채운다. 학생이 확인·수정한 뒤 직접 보낸다.
+  const voice = useVoiceInput({ onText: setDraft })
   // 실패한 글을 다시 보낼 때 같은 request_id를 써서 백엔드가 중복 발화로 세지 않게 한다.
   const lastRequest = useRef<{ text: string; requestId: string } | null>(null)
   const logRef = useRef<HTMLDivElement>(null)
@@ -73,6 +80,8 @@ function ChatbotChatPage() {
 
   const { case: counselCase, messages } = data
   const open = counselCase.status === 'in_progress'
+  // 예시 문장은 순서대로 보내야 세 번째에서 선생님께 전달되므로, 지금까지 보낸 학생 말 수로 다음 문장을 고른다.
+  const studentTurns = messages.filter((m) => m.role === 'student').length
   const busy = sendMessage.isPending || handoff.isPending || finish.isPending
   const failure = [sendMessage, handoff, finish].find((m) => m.isError)?.error
 
@@ -80,6 +89,8 @@ function ChatbotChatPage() {
     const previous = lastRequest.current
     const requestId = previous?.text === text ? previous.requestId : crypto.randomUUID()
     lastRequest.current = { text, requestId }
+    voice.cancel()
+    voice.dismissError()
     setDraft('')
     sendMessage.mutate(
       { text, request_id: requestId },
@@ -152,7 +163,41 @@ function ChatbotChatPage() {
           )}
 
           {open ? (
-            <ChatComposer value={draft} onChange={setDraft} onSubmit={send} disabled={busy} />
+            <>
+              {voice.error && (
+                <p role="status" className="text-sm text-destructive">
+                  {VOICE_ERROR_MESSAGES[voice.error]}
+                </p>
+              )}
+              <ChatComposer
+                value={draft}
+                // 듣는 중에 직접 고치면 인식을 끊어, 뒤늦게 온 결과가 고친 글을 덮지 않게 한다.
+                onChange={(value) => {
+                  voice.cancel()
+                  setDraft(value)
+                }}
+                onSubmit={send}
+                disabled={busy}
+                suggestions={
+                  <ExampleSentence
+                    text={DEMO_LINES[studentTurns % DEMO_LINES.length]}
+                    onPick={(text) => {
+                      voice.cancel()
+                      setDraft(text)
+                    }}
+                    disabled={busy}
+                  />
+                }
+                actions={
+                  <MicButton
+                    listening={voice.listening}
+                    onStart={() => voice.start(draft)}
+                    onStop={voice.stop}
+                    disabled={busy}
+                  />
+                }
+              />
+            </>
           ) : (
             <ChatClosedNotice counselCase={counselCase} />
           )}
