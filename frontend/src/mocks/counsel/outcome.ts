@@ -26,15 +26,18 @@ export function closeCase(stored: StoredCase, reason: HandoffReason | null): Jud
   } else {
     c.status = 'completed'
   }
-  stored.summary = summarize(
-    stored.form ?? { topic: '기타', answers: [] },
-    stored.messages,
-    s.detected,
-  )
+  const form = stored.form ?? { topic: '기타', answers: [] }
+  stored.summary = summarize({
+    form,
+    messages: stored.messages,
+    keywords: s.detected,
+    reason,
+    risk,
+  })
   if (reason) {
     stored.documents = createDocuments({
       student: c.student,
-      form: stored.form ?? { topic: '기타', answers: [] },
+      form,
       summary: stored.summary,
       keywords: s.detected,
       risk,

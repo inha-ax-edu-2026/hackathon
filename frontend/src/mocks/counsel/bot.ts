@@ -1,5 +1,7 @@
-import type { CounselForm, Message } from '@/api/counselTypes.ts'
+import type { CounselForm, HandoffReason, Message, Risk } from '@/api/counselTypes.ts'
 import { DEMO_STUDENT } from '@/lib/counsel/identity.ts'
+import { HANDOFF_REASON_LABEL, RISK_LABEL } from '@/lib/counsel/labels.ts'
+import { KEYWORDS } from './judgment.ts'
 
 /**
  * 목 AI 챗봇: 첫 인사, 발화마다의 답, 전환 요약. 실제로는 backend가 AI로 만든다(제안서 5절).
@@ -51,12 +53,12 @@ const clip = (text: string, n: number) => (text.length > n ? `${text.slice(0, n)
 
 const followups = (form: CounselForm) => FOLLOWUPS[form.topic] ?? FOLLOWUPS.기타
 
-/** 양식에서 「고민」 질문의 답. 양식이 확정되기 전이라 질문 문구로 찾는다. */
-const concernOf = (form: CounselForm) =>
-  form.answers.find((a) => a.question.includes('고민') && a.answer.trim())?.answer.trim() ?? null
+/** 양식에서 질문 문구에 `hint`가 든 항목의 답. 양식이 확정되기 전이라 질문 문구로 찾는다. */
+const answerOf = (form: CounselForm, hint: string) =>
+  form.answers.find((a) => a.question.includes(hint) && a.answer.trim())?.answer.trim() ?? null
 
 export function greeting(form: CounselForm) {
-  const concern = concernOf(form)
+  const concern = answerOf(form, '고민')
   const opening = concern
     ? `양식에 "${clip(concern, 36)}"라고 적어 줬네. 이야기해 줘서 고마워.`
     : `${form.topic} 이야기를 하고 싶구나. 와 줘서 고마워.`
@@ -80,43 +82,78 @@ export function reply(form: CounselForm, text: string, studentTurns: number) {
   return `${ACKS[(studentTurns - 1) % ACKS.length]} ${list[studentTurns % list.length]}`
 }
 
-/** 전환 요약(2~4문장). 학생이 말하지 않은 사실은 만들지 않는다. */
-function aiSummary(form: CounselForm, messages: Message[], keywords: string[]) {
-  const said = messages.filter((m) => m.role === 'student').map((m) => m.text)
-  const concern = concernOf(form)
-  const sentences = [
-    concern
-      ? `학생은 ${form.topic} 고민으로 AI 챗봇 상담을 시작했고, 상담 양식에 "${clip(concern, 60)}"라고 적었다.`
-      : `학생은 ${form.topic} 고민으로 AI 챗봇 상담을 시작했다.`,
+type SummarySource = {
+  form: CounselForm
+  messages: Message[]
+  keywords: string[]
+  /** null이면 전환 없이 끝낸 상담 */
+  reason: HandoffReason | null
+  risk: Risk
+}
+
+const keywordList = (keywords: string[]) => keywords.map((k) => `'${k}'`).join(', ')
+
+/** 양식에서 고른 답(기분 점수·기간)만 옮기고, 학생이 직접 쓴 글은 인용하지 않는다. */
+function formSentence(form: CounselForm) {
+  const mood = answerOf(form, '기분')
+  const duration = answerOf(form, '기간')
+  const parts = [
+    mood && `지금 기분을 5점 중 ${mood}점으로 답했`,
+    duration && `고민이 ${duration} 이어졌다고 했`,
+  ].filter(Boolean)
+  if (parts.length === 0) return null
+  return `상담 양식에서 ${parts.join('고, ')}다.`
+}
+
+/** 감지 키워드를 심각·경미로 나눠 이름만 든다. 학생 발화 문장은 옮기지 않는다. */
+function keywordSentence(keywords: string[], studentTurns: number) {
+  if (studentTurns === 0) return '대화에서 학생이 직접 한 말은 없다.'
+  if (keywords.length === 0) return `학생 발화 ${studentTurns}번에서 감지 키워드는 없었다.`
+  const severe = keywords.filter((k) => KEYWORDS.severe.includes(k))
+  const mild = keywords.filter((k) => !KEYWORDS.severe.includes(k))
+  const groups = [
+    severe.length > 0 && `심각: ${keywordList(severe)}`,
+    mild.length > 0 && `경미: ${keywordList(mild)}`,
+  ].filter(Boolean)
+  return `학생 발화 ${studentTurns}번에서 키워드가 감지되었다(${groups.join(' / ')}).`
+}
+
+const REASON_SENTENCE: Record<HandoffReason, string> = {
+  keyword: '키워드 기준에 따라 개인상담으로 바로 전환되었다.',
+  student_request: '학생이 「선생님과 상담하기」를 눌러 선생님과의 상담을 직접 요청했다.',
+}
+
+/**
+ * 전환 요약. 학생 발화를 그대로 옮기지 않고 주제·양식 답·감지 키워드·전환 사유·위험도로 풀어 쓴다.
+ * 학생이 말하지 않은 사실은 만들지 않는다.
+ */
+function aiSummary({ form, messages, keywords, reason, risk }: SummarySource) {
+  const studentTurns = messages.filter((m) => m.role === 'student').length
+  return [
+    `학생은 ${form.topic} 고민으로 AI 챗봇 상담을 시작했다.`,
+    formSentence(form),
+    keywordSentence(keywords, studentTurns),
+    reason ? REASON_SENTENCE[reason] : '학생이 전환 없이 상담을 끝냈다.',
+    `위험도는 ${RISK_LABEL[risk]}으로 판단했다.`,
   ]
-  if (said.length > 0) {
-    sentences.push(
-      `대화에서 학생은 ${said
-        .slice(-2)
-        .map((t) => `"${clip(t, 40)}"`)
-        .join(', ')}라고 말했다.`,
-    )
-  } else {
-    sentences.push('대화에서 학생이 직접 한 말은 없다.')
-  }
-  if (keywords.length > 0) sentences.push(`감지 키워드는 ${keywords.join(', ')}이다.`)
-  return sentences.join(' ')
+    .filter(Boolean)
+    .join(' ')
 }
 
 /** AI 요약이 실패하면 쓰는 고정 틀 요약. 전환은 AI 장애에 막히지 않는다(제안서 5.2). */
-function fallbackSummary(form: CounselForm, keywords: string[]) {
-  const concern = concernOf(form)
+function fallbackSummary({ form, keywords, reason, risk }: SummarySource) {
   return [
     `주제: ${form.topic}`,
-    `고민: ${concern ? clip(concern, 80) : '양식에 적지 않음'}`,
+    `전환 사유: ${reason ? HANDOFF_REASON_LABEL[reason] : '전환 없음'}`,
+    `위험도: ${RISK_LABEL[risk]}`,
     `감지 키워드: ${keywords.length > 0 ? keywords.join(', ') : '없음'}`,
   ].join(' / ')
 }
 
-export function summarize(form: CounselForm, messages: Message[], keywords: string[]) {
+export function summarize(source: SummarySource) {
   try {
-    return aiSummary(form, messages, keywords)
+    return aiSummary(source)
   } catch {
-    return fallbackSummary(form, keywords)
+    return fallbackSummary(source)
   }
 }

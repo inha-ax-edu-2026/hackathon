@@ -121,6 +121,38 @@ describe('교사 상세', () => {
     expect(Object.keys(res)).not.toContain('messages')
   })
 
+  it('전환 요약과 서류 초안에 학생이 보낸 말이 그대로 들어가지 않는다', async () => {
+    const utterances = [
+      '반 애들이 나만 빼고 단톡방을 새로 만들었어',
+      '점심시간마다 혼자 앉아 있어서 힘들어',
+      '요즘은 그냥 다 그만두고 죽고 싶어',
+    ]
+    const { case: created } = await createCase()
+    for (const text of utterances) await say(created.id, text)
+
+    const res = await detail(created.id)
+
+    expect(res.case.status).toBe('awaiting_approval')
+    const texts = [res.summary ?? '', ...(res.documents?.items ?? []).map((d) => d.draft)]
+    expect(texts).toHaveLength(5)
+    for (const text of texts) {
+      for (const utterance of utterances) expect(text).not.toContain(utterance)
+    }
+  })
+
+  it('학생 요청 전환에서도 요약에 학생이 보낸 말이 그대로 들어가지 않는다', async () => {
+    const utterance = '어제 체육 시간에 있었던 일이 계속 생각나'
+    const { case: created } = await createCase()
+    await say(created.id, utterance)
+    await studentPost(created.id, 'handoff')
+
+    const res = await detail(created.id)
+
+    expect(res.summary).toBeTruthy()
+    expect(res.summary).not.toContain(utterance)
+    for (const d of res.documents?.items ?? []) expect(d.draft).not.toContain(utterance)
+  })
+
   it('종료 건에도 대화 전문은 없고 서류도 없다', async () => {
     const id = await finished()
 
