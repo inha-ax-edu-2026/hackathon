@@ -15,6 +15,7 @@ import {
   QUESTIONS,
   TOPICS,
 } from '@/lib/counsel/form.ts'
+import { TEACHER_VISIBILITY_NOTICE } from '@/lib/counsel/labels.ts'
 
 const labelClass = 'mb-2 block text-sm font-medium'
 
@@ -127,7 +128,7 @@ function ChatbotFormPage() {
           </div>
 
           <p className="rounded-lg bg-muted px-4 py-3 text-sm text-secondary-foreground">
-            선생님은 요약·위험도·상담 양식을 보고, 대화 내용 전체는 보지 않아요
+            {TEACHER_VISIBILITY_NOTICE}
           </p>
 
           {createCase.isError && (

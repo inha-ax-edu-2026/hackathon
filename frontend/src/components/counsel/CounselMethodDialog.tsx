@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog.tsx'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group.tsx'
+import { TEACHER_VISIBILITY_NOTICE } from '@/lib/counsel/labels.ts'
 import { cn } from '@/lib/utils.ts'
 
 type Method = 'chatbot' | 'individual'
@@ -78,7 +79,7 @@ export function CounselMethodDialog({ open, onOpenChange }: CounselMethodDialogP
 
         {method === 'chatbot' && (
           <p className="rounded-lg bg-muted px-4 py-3 text-sm text-secondary-foreground">
-            선생님은 요약·위험도·상담 양식을 보고, 대화 내용 전체는 보지 않아요
+            {TEACHER_VISIBILITY_NOTICE}
           </p>
         )}
 

@@ -1,4 +1,4 @@
-import { type DefaultBodyType, HttpResponse, http, type PathParams } from 'msw'
+import { type DefaultBodyType, delay, HttpResponse, http, type PathParams } from 'msw'
 import type {
   ApiErrorBody,
   CaseListResponse,
@@ -142,6 +142,9 @@ export const studentHandlers = [
     const text = typeof body?.text === 'string' ? body.text.trim() : ''
     if (!text) return errorJson(422, '보낼 말을 입력해 주세요.')
     const requestId = typeof body?.request_id === 'string' ? body.request_id : null
+
+    // 챗봇이 답을 쓰는 시간. 화면의 입력 중 표시가 보이게 한다(Node 테스트에서는 5ms).
+    await delay()
 
     const id = String(params.id)
     const replayed = requestId ? findMine(loadDb(), id)?.replies?.[requestId] : undefined

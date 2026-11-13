@@ -1,9 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   CaseListResponse,
+  CounselCase,
   CounselForm,
   CreateCaseRequest,
   CreateCaseResponse,
+  JudgmentResponse,
+  SendMessageRequest,
+  SendMessageResponse,
   StudentCaseDetailResponse,
 } from '@/api/counselTypes.ts'
 import { apiFetch } from '@/lib/api.ts'
@@ -30,6 +34,9 @@ export function useStudentCase(id: string) {
   return useQuery({
     queryKey: studentCounselKeys.detail(id),
     queryFn: () => apiFetch<StudentCaseDetailResponse>(`/api/student/counsel/cases/${id}`),
+    // 진행 중이 아니면(전환·종료) 교사 승인 같은 상태 변화를 다른 탭에서 받아 온다.
+    refetchInterval: (query) =>
+      query.state.data && query.state.data.case.status !== 'in_progress' ? 1500 : false,
   })
 }
 
@@ -52,4 +59,61 @@ export function useCreateCase() {
       return queryClient.invalidateQueries({ queryKey: studentCounselKeys.list() })
     },
   })
+}
+
+/** 상담 건 상세 캐시를 고친다. 응답을 받은 뒤 다시 요청하지 않고 바로 화면에 반영하려고 쓴다. */
+function usePatchDetail(id: string) {
+  const queryClient = useQueryClient()
+  return (patch: (detail: StudentCaseDetailResponse) => StudentCaseDetailResponse) => {
+    queryClient.setQueryData<StudentCaseDetailResponse>(studentCounselKeys.detail(id), (detail) =>
+      detail ? patch(detail) : detail,
+    )
+    return queryClient.invalidateQueries({ queryKey: studentCounselKeys.list() })
+  }
+}
+
+/**
+ * 발화 보내기(제안서 6.3). 같은 `request_id`로 다시 보내면 백엔드가 같은 응답을 돌려주므로
+ * 호출하는 쪽은 실패한 글을 다시 보낼 때 같은 `request_id`를 쓴다.
+ * 이미 끝난 건(409)이면 상세를 다시 받아 끝난 화면으로 바뀌게 한다.
+ */
+export function useSendMessage(id: string) {
+  const queryClient = useQueryClient()
+  const patchDetail = usePatchDetail(id)
+  return useMutation({
+    mutationFn: (request: SendMessageRequest) =>
+      apiFetch<SendMessageResponse>(`/api/student/counsel/cases/${id}/messages`, {
+        method: 'POST',
+        body: request,
+      }),
+    onSuccess: ({ student_message, bot_message, case: updated }) =>
+      patchDetail((detail) => ({
+        ...detail,
+        case: updated,
+        messages: [...detail.messages, student_message, ...(bot_message ? [bot_message] : [])],
+      })),
+    onError: () => queryClient.invalidateQueries({ queryKey: studentCounselKeys.detail(id) }),
+  })
+}
+
+function useCloseCase(id: string, action: 'handoff' | 'finish') {
+  const queryClient = useQueryClient()
+  const patchDetail = usePatchDetail(id)
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<JudgmentResponse>(`/api/student/counsel/cases/${id}/${action}`, { method: 'POST' }),
+    onSuccess: ({ case: updated }: { case: CounselCase }) =>
+      patchDetail((detail) => ({ ...detail, case: updated })),
+    onError: () => queryClient.invalidateQueries({ queryKey: studentCounselKeys.detail(id) }),
+  })
+}
+
+/** 「선생님과 상담하기」(6.4): 학생 요청으로 전환한다. */
+export function useHandoff(id: string) {
+  return useCloseCase(id, 'handoff')
+}
+
+/** 「상담 끝내기」(6.5): 전환 없이 끝낸다. */
+export function useFinishCase(id: string) {
+  return useCloseCase(id, 'finish')
 }
