@@ -23,7 +23,7 @@ export function DocCard({ doc, approved, onApprove, onEdit }: DocCardProps) {
     <div
       className={cn(
         'space-y-2 rounded-lg border p-3',
-        approved && 'border-emerald-500 bg-emerald-50',
+        approved && 'border-success bg-success-soft/40',
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -36,7 +36,7 @@ export function DocCard({ doc, approved, onApprove, onEdit }: DocCardProps) {
         <Button
           size="sm"
           variant={approved ? 'default' : 'outline'}
-          className={cn(approved && 'bg-emerald-600 hover:bg-emerald-600/90')}
+          className={cn(approved && 'bg-success hover:bg-success/90')}
           onClick={onApprove}
         >
           {approved ? '승인됨' : '검토 완료'}

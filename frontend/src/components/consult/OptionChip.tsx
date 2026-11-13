@@ -12,7 +12,9 @@ export function OptionChip({ selected, onClick, children }: OptionChipProps) {
       aria-pressed={selected}
       className={cn(
         'rounded-full border px-3 py-1 text-sm transition',
-        selected ? 'border-sky-600 bg-sky-600 text-white' : 'bg-background hover:bg-accent',
+        selected
+          ? 'border-primary bg-primary text-primary-foreground'
+          : 'bg-background hover:bg-accent',
       )}
     >
       {children}

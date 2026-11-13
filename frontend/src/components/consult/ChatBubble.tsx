@@ -7,7 +7,7 @@ type ChatBubbleProps = { message: Msg }
 export function ChatBubble({ message }: ChatBubbleProps) {
   if (message.role === 'system') {
     return (
-      <p className="mx-auto max-w-[90%] rounded-md bg-amber-100 px-3 py-1.5 text-center text-xs text-amber-900">
+      <p className="mx-auto max-w-[90%] rounded-md bg-warning-soft px-3 py-1.5 text-center text-xs text-warning-strong">
         {message.text}
       </p>
     )
@@ -18,7 +18,7 @@ export function ChatBubble({ message }: ChatBubbleProps) {
       <p
         className={cn(
           'max-w-[82%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap',
-          mine ? 'rounded-br-sm bg-sky-600 text-white' : 'rounded-bl-sm bg-muted',
+          mine ? 'rounded-br-sm bg-primary text-primary-foreground' : 'rounded-bl-sm bg-muted',
         )}
       >
         {message.text}

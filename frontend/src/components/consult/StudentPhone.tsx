@@ -24,7 +24,7 @@ export function StudentPhone({ flow }: { flow: Flow }) {
   return (
     <div className="mx-auto w-full max-w-[380px]">
       <p className="mb-2 text-center text-xs font-medium text-muted-foreground">학생 화면</p>
-      <div className="flex h-[640px] flex-col overflow-hidden rounded-[2rem] border-[6px] border-slate-800 bg-background shadow-lg">
+      <div className="flex h-[640px] flex-col overflow-hidden rounded-[2rem] border-[6px] border-accent-foreground bg-background shadow-lg">
         <div className="flex-1 overflow-y-auto p-3">
           {s.step === 'mode' && (
             <div className="space-y-2 pt-6">
@@ -72,13 +72,13 @@ export function StudentPhone({ flow }: { flow: Flow }) {
                   onClick={() => flow.pickSlot(slot)}
                   className={cn(
                     'flex w-full items-center gap-2 rounded-lg border p-3 text-sm',
-                    s.slot === slot && 'border-sky-600 bg-sky-50',
+                    s.slot === slot && 'border-primary bg-primary-soft/40',
                   )}
                 >
                   <CalendarDays className="size-4" /> {slot}
                 </button>
               ))}
-              {s.slot && <p className="text-sm text-emerald-700">등록 완료: {s.slot}</p>}
+              {s.slot && <p className="text-sm text-success-strong">등록 완료: {s.slot}</p>}
             </div>
           )}
 
@@ -121,7 +121,8 @@ export function StudentPhone({ flow }: { flow: Flow }) {
                 variant="outline"
                 aria-label={speech.listening ? '음성 입력 중지' : '음성으로 입력'}
                 className={cn(
-                  speech.listening && 'animate-pulse bg-red-600 text-white hover:bg-red-600',
+                  speech.listening &&
+                    'animate-pulse bg-destructive text-white hover:bg-destructive',
                 )}
                 onClick={speech.listening ? speech.stop : speech.start}
               >

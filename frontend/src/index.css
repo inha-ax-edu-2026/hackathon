@@ -1,45 +1,93 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * 디자인 시스템: 슈퍼스쿨(front.superschool.link / m.front.superschool.link) 기준.
+ * 실제 사이트에서 추출한 값이며, 슈퍼스쿨은 PC·모바일이 별도 화면인 적응형이라
+ * 토큰은 공통으로 쓰고 PC(교사 화면)·모바일(학생 화면) 차이는 아래 "화면별 규칙"을 따른다.
+ *
+ * - 주색(primary): 마젠타 #e6007e — CTA 버튼, 선택 상태, 활성 메뉴
+ * - 브랜드(brand): 오렌지 #ff600c — 로고·강조 테두리·알림 배너·조회조건
+ * - 중립색: 슈퍼스쿨 gray 스케일 (gray-100~900)
+ * - 폰트: Pretendard, 기본 본문 14px
+ *
+ * 화면별 규칙
+ * - PC(교사): 버튼·입력·배지 radius 8px(rounded-md), 카드 14px(rounded-xl),
+ *   페이지 제목 20px/700, 표 머리글 14px/500 gray-500, 입력·버튼 높이 32~40px
+ * - 모바일(학생): 섹션 제목 20px/600, 퀵메뉴 아이콘 56px·radius 12px,
+ *   하단 탭바 68px, 태그 radius 4px, 라벨 13px
+ */
+
 :root {
-  --border: oklch(0.922 0 0);
-  --accent: oklch(0.97 0 0);
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  /* 중립색 (슈퍼스쿨 gray) */
+  --background: #fff;
+  --foreground: #121417;
+  --card: #fff;
+  --card-foreground: #121417;
+  --popover: #fff;
+  --popover-foreground: #121417;
+  --secondary: #f4f6f8;
+  --secondary-foreground: #4c5057;
+  --muted: #f4f6f8;
+  --muted-foreground: #898d94;
+  --accent: #f4f6f8;
+  --accent-foreground: #24282d;
+  --border: #e8eaed;
+  --input: #e8eaed;
+
+  /* 주색: 마젠타 */
+  --primary: #e6007e;
+  --primary-foreground: #fff;
+  --primary-soft: #fcdaed;
+  --ring: #e6007e;
+
+  /* 브랜드: 오렌지 */
+  --brand: #ff600c;
+  --brand-foreground: #fff;
+  --brand-soft: #fdece4;
+  --brand-border: oklch(0.837 0.128 66.29);
+
+  /* 상태색 */
+  --destructive: #ff2626;
+  --destructive-soft: #ffebeb;
+  --destructive-strong: oklch(0.444 0.177 26.899);
+  --success: #00a876;
+  --success-soft: #ddf4ed;
+  --success-strong: oklch(0.432 0.095 166.913);
+  --warning: oklch(0.681 0.162 75.834);
+  --warning-soft: oklch(0.962 0.059 95.617);
+  --warning-strong: oklch(0.414 0.112 45.904);
+  --info: #0066ff;
+  --info-soft: #f2f9ff;
+  --info-strong: oklch(0.424 0.199 265.638);
+
+  --chart-1: oklch(0.6887 0.208 41.07);
+  --chart-2: oklch(0.8525 0.1669 85.87);
+  --chart-3: oklch(0.6473 0.1392 163.34);
+  --chart-4: oklch(0.5635 0.2408 260.82);
+  --chart-5: oklch(0.6189 0.2376 297.43);
+
+  --sidebar: #fff;
+  --sidebar-foreground: #121417;
+  --sidebar-primary: #e6007e;
+  --sidebar-primary-foreground: #fff;
+  --sidebar-accent: #fcdaed;
+  --sidebar-accent-foreground: #e6007e;
+  --sidebar-border: #e8eaed;
+  --sidebar-ring: #e6007e;
 }
 
 @theme inline {
+  --font-sans:
+    "Pretendard Variable", Pretendard, -apple-system, system-ui, Roboto, "Helvetica Neue",
+    "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -47,6 +95,7 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -55,21 +104,41 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-border: var(--brand-border);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-destructive-strong: var(--destructive-strong);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-strong: var(--success-strong);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-strong: var(--warning-strong);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-strong: var(--info-strong);
+
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -80,38 +149,25 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* 슈퍼스쿨에는 다크 모드가 없다. shadcn 컴포넌트의 dark: 변형이 깨지지 않도록 최소한만 둔다. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  --background: #121417;
+  --foreground: #f9fafb;
+  --card: #24282d;
+  --card-foreground: #f9fafb;
+  --popover: #24282d;
+  --popover-foreground: #f9fafb;
+  --secondary: #24282d;
+  --secondary-foreground: #f9fafb;
+  --muted: #24282d;
+  --muted-foreground: #c7cbd1;
+  --accent: #24282d;
+  --accent-foreground: #f9fafb;
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar: #24282d;
+  --sidebar-foreground: #f9fafb;
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
 }
 
 @layer base {
@@ -119,6 +175,6 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-sm text-foreground antialiased;
   }
 }

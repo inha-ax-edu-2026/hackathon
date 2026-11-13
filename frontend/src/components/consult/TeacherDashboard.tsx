@@ -29,13 +29,13 @@ export function TeacherDashboard({ flow }: { flow: Flow }) {
       <div
         className={cn(
           'flex items-center gap-3 rounded-xl border p-4',
-          alerted ? 'animate-pulse border-amber-400 bg-amber-50' : 'bg-muted/40',
+          alerted ? 'animate-pulse border-warning bg-warning-soft/50' : 'bg-muted/40',
         )}
       >
         {booked ? (
-          <CalendarDays className="size-6 text-sky-600" />
+          <CalendarDays className="size-6 text-primary" />
         ) : (
-          <Bell className={cn('size-6', alerted ? 'text-amber-600' : 'text-muted-foreground')} />
+          <Bell className={cn('size-6', alerted ? 'text-warning' : 'text-muted-foreground')} />
         )}
         <div className="flex-1 text-sm">
           {alerted && s.handoff ? (
@@ -79,18 +79,21 @@ export function TeacherDashboard({ flow }: { flow: Flow }) {
         <Panel title="키워드 모니터" hint={`반복 ${det.count}/${s.keywords.threshold}`}>
           <div className="mb-2 h-2 overflow-hidden rounded-full bg-muted">
             <div
-              className={cn('h-full transition-all', det.trigger ? 'bg-red-500' : 'bg-sky-500')}
+              className={cn('h-full transition-all', det.trigger ? 'bg-destructive' : 'bg-info')}
               style={{ width: `${Math.min(100, (det.count / s.keywords.threshold) * 100)}%` }}
             />
           </div>
           <div className="flex flex-wrap gap-1 text-xs">
             {det.severe.map((k) => (
-              <span key={k} className="rounded bg-red-100 px-1.5 py-0.5 text-red-800">
+              <span
+                key={k}
+                className="rounded bg-destructive-soft px-1.5 py-0.5 text-destructive-strong"
+              >
                 {k}
               </span>
             ))}
             {[...new Set(det.mild)].map((k) => (
-              <span key={k} className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-800">
+              <span key={k} className="rounded bg-warning-soft px-1.5 py-0.5 text-warning-strong">
                 {k}
               </span>
             ))}
@@ -125,7 +128,7 @@ export function TeacherDashboard({ flow }: { flow: Flow }) {
           <PipelineSteps stage={s.pipeline.stage} />
           {s.pipeline.docs.length > 0 && (
             <div className="mt-3 space-y-2">
-              <p className="rounded-md bg-emerald-50 p-2 text-xs text-emerald-900">
+              <p className="rounded-md bg-success-soft p-2 text-xs text-success-strong">
                 직접 작성 대비 약 {savedMinutes(s.pipeline.docs)}분 절감 (가정치)
               </p>
               <div className="grid gap-2 md:grid-cols-2">

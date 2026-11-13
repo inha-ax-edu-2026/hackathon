@@ -15,8 +15,8 @@ export function PipelineSteps({ stage }: { stage: number }) {
             <span
               className={cn(
                 'flex size-6 items-center justify-center rounded-full border',
-                done && 'border-emerald-600 bg-emerald-600 text-white',
-                active && 'border-sky-600 text-sky-600',
+                done && 'border-success bg-success text-white',
+                active && 'border-primary text-primary',
               )}
             >
               {done ? (

@@ -3,9 +3,9 @@ import { RISK_LABEL, type Risk } from '@/lib/consult/model'
 import { cn } from '@/lib/utils'
 
 const RISK_CLASS: Record<Risk, string> = {
-  low: 'bg-emerald-100 text-emerald-800',
-  medium: 'bg-amber-100 text-amber-800',
-  high: 'bg-red-100 text-red-800',
+  low: 'bg-success-soft text-success-strong',
+  medium: 'bg-warning-soft text-warning-strong',
+  high: 'bg-destructive-soft text-destructive-strong',
 }
 
 export function RiskBadge({ risk }: { risk: Risk }) {
