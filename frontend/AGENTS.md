@@ -35,31 +35,31 @@
 
 ```
 src/
-├── main.tsx   # 진입점
-├── App.tsx    # 셸 밖 페이지(시연 런처·/consult 프로토타입·404) 레이아웃
-├── router.tsx # 경로 정의. /student/* 는 학생 셸, /teacher/* 는 교사 셸의 children
-├── api/
-│   ├── counselTypes.ts # 상담 API 계약 타입(상담 건·상태·양식·메시지·판단 결과·요청/응답)
-│   └── {도메인}.ts     # 쿼리 훅 (demo.ts: 시연 초기화)
-├── pages/     # 경로 하나당 페이지 컴포넌트 하나. student/, teacher/ 아래로 나눈다
+├── main.tsx   # 진입점 (VITE_USE_MOCK=true면 MSW 시작)
+├── App.tsx    # 셸 밖 페이지(시연 런처, 404)의 레이아웃
+├── router.tsx # 경로 정의. 새 페이지는 알맞은 레이아웃의 children에 추가
+├── pages/     # 경로 하나당 페이지 컴포넌트 하나
+│   ├── DemoLauncherPage.tsx  # `/` 시연 런처(학생·교사 화면 열기, 시연 초기화)
+│   ├── student/              # `/student/*` 내 상담, 챗봇 양식·대화, 개인상담 신청
+│   └── teacher/              # `/teacher/*` 개인상담 관리 목록·상세
 ├── components/
 │   ├── ui/      # shadcn/ui 컴포넌트 (CLI가 생성)
-│   ├── shell/   # 슈퍼스쿨식 셸: AppShell·Lnb·PageHeader/PageBody·BellButton, 학생·교사 셸
-│   └── consult/ # 기존 /consult 프로토타입 조각
-├── hooks/     # 커스텀 훅 (useConsultFlow: 프로토타입 상태, useSpeech: 음성 입력)
+│   ├── shell/   # 슈퍼스쿨 셸(StudentShell·TeacherShell, LNB, 헤더, 종 버튼)
+│   └── counsel/ # 상담 화면 조각. 학생 챗봇(메시지 목록·입력창·마이크), 교사 목록·알림 시트,
+│                #   detail/ 아래에 상담 건 상세 카드·사후 서류 카드
+├── api/       # 도메인별 API. counselTypes.ts(계약 타입), studentCounsel.ts·teacherCounsel.ts·demo.ts(쿼리·뮤테이션 훅)
+├── hooks/     # 커스텀 훅 (useVoiceInput: 음성 입력, useHandoffToasts: 교사 전환 알림 토스트)
 ├── lib/
-│   ├── counsel/        # 상담 화면 공용 상수(labels.ts 상태·위험도 표기, identity.ts 고정 신원)
-│   ├── consult/        # 프로토타입 타입·상수(model.ts)와 목 AI 로직(mockAi.ts)
+│   ├── counsel/        # 상담 화면 로직: 라벨·양식 검증·시간 표기·교사용 가림·알림 계산·음성 오류·예시 문장
 │   ├── api.ts          # apiFetch: 백엔드 호출 공통 fetch 래퍼
 │   ├── utils.ts        # cn(): Tailwind 클래스 병합
 │   └── queryClient.ts  # QueryClient 기본 옵션
 ├── mocks/
-│   ├── handlers.ts     # 목 핸들러를 모으는 곳
-│   ├── counsel/        # 상담 API 목: db.ts(localStorage 저장소)·seed.ts·{demo,student,teacher}Handlers.ts
-│   ├── http.ts         # apiUrl()·errorJson() 핸들러 공용 도우미
-│   ├── browser.ts      # MSW 워커 (브라우저)
-│   └── node.ts         # MSW 서버 (테스트)
-├── test/      # 상담 API 계약 테스트(*.test.ts)와 setup.ts
+│   ├── handlers.ts     # 목 핸들러 모음
+│   ├── browser.ts·node.ts  # MSW 워커(브라우저)·서버(테스트)
+│   ├── http.ts         # apiUrl 등 핸들러 공용 도우미
+│   └── counsel/        # 상담 목 API: 저장소(db, localStorage)·시드·학생/교사/시연 핸들러·목 챗봇(bot)·판단 규칙(judgment)·서류 초안
+├── test/      # Vitest 테스트와 setup (메모리 Storage 주입)
 └── assets/    # 이미지 등 정적 에셋
 ```
 
