@@ -101,7 +101,18 @@ frontend ↔ backend 사이의 API 스펙(엔드포인트, 요청·응답 형식
 ## 협업 규칙
 
 - 팀은 예비교사 2명 + 예비개발자 2명(Frontend, Backend). 개발자 각자가 자기 폴더를 소유한다.
-- 커밋 메시지는 Conventional Commits 형식에 범위를 폴더명으로 쓴다. 예: `feat(frontend): 출석 체크 화면`, `fix(backend): ...`
+- 커밋 메시지는 Conventional Commits 형식의 제목 한 줄만 쓰고, 범위는 폴더명이다. 본문(description)과 footer는 생략한다.
+  예: `feat(frontend): 출석 체크 화면`, `fix(backend): ...`
 - 한 커밋은 한 폴더만 건드린다. 루트 변경은 `chore(root): ...`로 분리한다.
 - 비밀값(API 키, 테스트 계정 비밀번호 등)은 각 폴더의 `.env`에 두고 커밋하지 않는다. `.env.example`에는 키 이름만 남긴다.
 - 사용자 대상 문구와 문서는 한국어로 작성한다.
+
+### 브랜치
+
+- 작업 단위(기능 하나, 버그 하나)마다 브랜치를 만든다. 기준은 항상 fetch한 직후의 `origin/main`이다.
+  간단한 수정·문서 변경은 브랜치 없이 `main`에 직접 커밋한다.
+- 브랜치 이름은 `{폴더명}/{변경내용}`이고, 변경내용은 영어 kebab-case다. 예: `frontend/attendance-check`, `backend/student-api`
+  - 접두어는 폴더명 하나뿐이다. `feat/`·`fix/` 같은 타입 접두어 자리에도 폴더명을 쓴다.
+- 병합은 PR 없이 로컬에서 **rebase and merge** 한다. 브랜치를 최신 `origin/main` 위로 rebase한 뒤 `main`에 fast-forward로만 병합해,
+  `main` 이력을 merge 커밋 없는 일직선으로 유지한다.
+- 병합 직후 브랜치를 local과 origin 모두에서 지운다.
