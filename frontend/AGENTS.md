@@ -17,39 +17,49 @@
 
 모두 `frontend/` 안에서 실행한다.
 
-| 명령                | 용도                                |
-| ------------------- | ----------------------------------- |
-| `npm install`       | 의존성 설치                         |
-| `npm run dev`       | 개발 서버 (http://localhost:5173)   |
-| `npm run build`     | 타입 체크(`tsc -b`) + 프로덕션 빌드 |
-| `npm run lint`      | Biome 린트                          |
-| `npm run format`    | Biome 포맷 적용                     |
-| `npm run check`     | 포맷·린트·import 정렬 검사          |
-| `npm run check:fix` | 위 항목 자동 수정                   |
-| `npm run preview`   | 빌드 결과 미리보기                  |
+| 명령                | 용도                                   |
+| ------------------- | -------------------------------------- |
+| `npm install`       | 의존성 설치                            |
+| `npm run dev`       | 개발 서버 (http://localhost:5173)      |
+| `npm run build`     | 타입 체크(`tsc -b`) + 프로덕션 빌드    |
+| `npm run lint`      | Biome 린트                             |
+| `npm run format`    | Biome 포맷 적용                        |
+| `npm run check`     | 포맷·린트·import 정렬 검사             |
+| `npm run check:fix` | 위 항목 자동 수정                      |
+| `npm run preview`   | 빌드 결과 미리보기                     |
+| `npm test`          | Vitest 1회 실행 (상담 API 계약 테스트) |
 
-커밋 전 `npm run check`와 `npm run build`가 통과해야 한다. 파일을 수정한 뒤에는 `npm run check:fix`로 정리한다.
+커밋 전 `npm run check`·`npm run build`·`npm test`가 통과해야 한다. 파일을 수정한 뒤에는 `npm run check:fix`로 정리한다.
 
 ## 구조
 
 ```
 src/
 ├── main.tsx   # 진입점
-├── App.tsx    # 공통 레이아웃 (헤더 + <Outlet />)
-├── router.tsx # 경로 정의. 새 페이지는 children에 추가
-├── pages/     # 경로 하나당 페이지 컴포넌트 하나 (HomePage.tsx 등)
+├── App.tsx    # 셸 밖 페이지(시연 런처·/consult 프로토타입·404) 레이아웃
+├── router.tsx # 경로 정의. /student/* 는 학생 셸, /teacher/* 는 교사 셸의 children
+├── api/
+│   ├── counselTypes.ts # 상담 API 계약 타입(상담 건·상태·양식·메시지·판단 결과·요청/응답)
+│   └── {도메인}.ts     # 쿼리 훅 (demo.ts: 시연 초기화)
+├── pages/     # 경로 하나당 페이지 컴포넌트 하나. student/, teacher/ 아래로 나눈다
 ├── components/
 │   ├── ui/      # shadcn/ui 컴포넌트 (CLI가 생성)
-│   └── consult/ # 상담 화면 조각 (학생 휴대폰·교사 대시보드 등)
-├── hooks/     # 커스텀 훅 (useConsultFlow: 상담 플로우 상태, useSpeech: 음성 입력)
+│   ├── shell/   # 슈퍼스쿨식 셸: AppShell·Lnb·PageHeader/PageBody·BellButton, 학생·교사 셸
+│   └── consult/ # 기존 /consult 프로토타입 조각
+├── hooks/     # 커스텀 훅 (useConsultFlow: 프로토타입 상태, useSpeech: 음성 입력)
 ├── lib/
-│   ├── consult/        # 상담 타입·상수(model.ts)와 목 AI 로직(mockAi.ts)
+│   ├── counsel/        # 상담 화면 공용 상수(labels.ts 상태·위험도 표기, identity.ts 고정 신원)
+│   ├── consult/        # 프로토타입 타입·상수(model.ts)와 목 AI 로직(mockAi.ts)
 │   ├── api.ts          # apiFetch: 백엔드 호출 공통 fetch 래퍼
 │   ├── utils.ts        # cn(): Tailwind 클래스 병합
 │   └── queryClient.ts  # QueryClient 기본 옵션
 ├── mocks/
-│   ├── handlers.ts     # 목 API 응답 정의
-│   └── browser.ts      # MSW 워커
+│   ├── handlers.ts     # 목 핸들러를 모으는 곳
+│   ├── counsel/        # 상담 API 목: db.ts(localStorage 저장소)·seed.ts·{demo,student,teacher}Handlers.ts
+│   ├── http.ts         # apiUrl()·errorJson() 핸들러 공용 도우미
+│   ├── browser.ts      # MSW 워커 (브라우저)
+│   └── node.ts         # MSW 서버 (테스트)
+├── test/      # 상담 API 계약 테스트(*.test.ts)와 setup.ts
 └── assets/    # 이미지 등 정적 에셋
 ```
 
@@ -66,3 +76,5 @@ src/
 - 버튼·입력·다이얼로그 같은 기본 UI는 직접 만들지 않고 `npx shadcn@latest add <이름>`으로 추가한다.
   색은 `bg-primary`, `text-muted-foreground`처럼 `src/index.css`의 테마 토큰을 쓰고, 클래스를 조건부로 합칠 때는 `cn()`을 쓴다.
 - 사용자 대상 문구는 한국어로 작성한다.
+- 테스트는 상담 API 이음매 하나에만 건다: `src/test/*.test.ts`에서 `apiFetch`로 계약 경로를 부르고 응답만 확인한다.
+  핸들러 내부 함수·저장소 키·컴포넌트 구조는 테스트하지 않는다. 저장소는 `setup.ts`가 테스트마다 `POST /api/demo/reset`으로 되돌린다.

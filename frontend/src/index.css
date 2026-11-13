@@ -40,6 +40,8 @@
   --accent-foreground: #24282d;
   --border: #e8eaed;
   --input: #e8eaed;
+  /* 셸 본문 배경 (슈퍼스쿨 gray-50) */
+  --canvas: #f9fafb;
 
   /* 주색: 마젠타 */
   --primary: #e6007e;
@@ -113,6 +115,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
+  --color-canvas: var(--canvas);
   --color-ring: var(--ring);
 
   --color-brand: var(--brand);
