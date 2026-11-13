@@ -2,7 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   CaseListResponse,
   CaseResponse,
+  DocumentKind,
+  DocumentsResponse,
   TeacherCaseDetailResponse,
+  UpdateDocumentRequest,
 } from '@/api/counselTypes.ts'
 import { ApiError, apiFetch } from '@/lib/api.ts'
 
@@ -67,5 +70,44 @@ export function useApproveCase() {
   return useMutation({
     mutationFn: (id: string) => apiFetch<CaseResponse>(`${BASE}/${id}/approve`, { method: 'POST' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teacherCounsel'] }),
+  })
+}
+
+/* ── 사후 서류 (09) ── */
+
+/** 서류 변경 응답(`{documents}`)을 상세 캐시에 바로 반영한다. 사후 서류는 상세 응답에 들어 있다. */
+function useApplyDocuments(caseId: string) {
+  const queryClient = useQueryClient()
+  return {
+    // 변경 전에 진행 중인 5초 폴링을 취소해, 늦게 온 옛 응답이 방금 한 변경을 덮지 않게 한다.
+    cancelPolling: () => queryClient.cancelQueries({ queryKey: teacherCaseDetailKey(caseId) }),
+    apply: ({ documents }: DocumentsResponse) =>
+      queryClient.setQueryData<TeacherCaseDetailResponse>(teacherCaseDetailKey(caseId), (old) =>
+        old ? { ...old, documents } : old,
+      ),
+  }
+}
+
+/** 서류 선택 바꾸기·초안 본문 수정. 본문을 고치면 그 서류의 승인이 풀린다. */
+export function useUpdateDocument(caseId: string) {
+  const { cancelPolling, apply } = useApplyDocuments(caseId)
+  return useMutation({
+    mutationFn: ({ kind, ...body }: { kind: DocumentKind } & UpdateDocumentRequest) =>
+      apiFetch<DocumentsResponse>(`${BASE}/${caseId}/documents/${kind}`, { method: 'PATCH', body }),
+    onMutate: cancelPolling,
+    onSuccess: apply,
+  })
+}
+
+/** 서류 「검토 완료」. 선택하지 않은 서류는 409. */
+export function useApproveDocument(caseId: string) {
+  const { cancelPolling, apply } = useApplyDocuments(caseId)
+  return useMutation({
+    mutationFn: (kind: DocumentKind) =>
+      apiFetch<DocumentsResponse>(`${BASE}/${caseId}/documents/${kind}/approve`, {
+        method: 'POST',
+      }),
+    onMutate: cancelPolling,
+    onSuccess: apply,
   })
 }
