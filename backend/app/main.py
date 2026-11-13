@@ -2,6 +2,8 @@
 
 import asyncio
 import os
+import secrets
+import sqlite3
 from contextlib import asynccontextmanager, suppress
 from dataclasses import replace
 from pathlib import Path
@@ -22,6 +24,8 @@ from app.ai import AIService
 from app.config import BACKEND_ROOT, Settings
 from app.counsel import Counsel, router as counsel_router
 from app.gateway import Gateway
+from app.archive import ArchiveStore
+from app.teacher import router as teacher_router
 
 STATIC_ROOT = Path(__file__).parent / "static"
 
@@ -61,13 +65,21 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
+        effective = config
+        if settings is None and not config.teacher_token:
+            token = secrets.token_urlsafe(32)
+            set_key(str(BACKEND_ROOT / ".env"), "TEACHER_ACCESS_TOKEN", token, quote_mode="always")
+            effective = replace(config, teacher_token=token)
+        application.state.settings = effective
+        application.state.archive = ArchiveStore(effective.database_path, effective.risk_threshold)
+        application.state.counsel = Counsel(application.state.archive)
         async with httpx.AsyncClient(
             timeout=config.timeout_seconds,
             follow_redirects=False,
             transport=transport,
         ) as client:
             application.state.client = client
-            application.state.ai = AIService(config, client)
+            application.state.ai = AIService(effective, client)
             async def reap():
                 while True:
                     await asyncio.sleep(60)
@@ -88,7 +100,7 @@ def create_app(
         lifespan=lifespan,
     )
     application.state.settings = config
-    application.state.counsel = Counsel()
+    application.state.counsel = None
     application.state.catalog_check = None
     application.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]"])
     application.add_middleware(
@@ -113,7 +125,7 @@ def create_app(
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Permissions-Policy"] = "microphone=(self), camera=()"
-        if request.url.path == "/" or request.url.path.startswith("/static/"):
+        if request.url.path in {"/", "/teacher"} or request.url.path.startswith("/static/"):
             response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; media-src 'self' blob:; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
         return response
 
@@ -123,12 +135,21 @@ def create_app(
         return JSONResponse({"detail": "입력 형식 또는 길이가 올바르지 않습니다.",
             "fields": [".".join(str(p) for p in error["loc"]) for error in exc.errors()]}, status_code=422)
 
+    @application.exception_handler(sqlite3.Error)
+    async def storage_error(request, exc):
+        return JSONResponse({"detail": "상담 기록을 저장하거나 읽지 못했습니다. 보고 완료로 간주하지 말고 담당 교사에게 직접 도움을 요청하세요."}, status_code=503)
+
     application.include_router(counsel_router)
+    application.include_router(teacher_router)
     application.mount("/static", StaticFiles(directory=STATIC_ROOT), name="static")
 
     @application.get("/", include_in_schema=False)
     async def index():
         return FileResponse(STATIC_ROOT / "index.html")
+
+    @application.get("/teacher", include_in_schema=False)
+    async def teacher_page():
+        return FileResponse(STATIC_ROOT / "teacher.html")
 
     @application.get("/api/local/settings", summary="API 키 존재 여부·모델 설정 (키 반환 없음)")
     async def local_settings():
@@ -183,6 +204,8 @@ def create_app(
         current = application.state.settings
         return {
             "status": "ok",
+            "counsel_contract": "archive-report-v1",
+            "teacher_inbox_configured": bool(current.teacher_token),
             "ai_mode": current.mode,
             "baze_configured": not current.missing_settings,
             "missing_settings": current.missing_settings,

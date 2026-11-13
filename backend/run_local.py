@@ -20,9 +20,11 @@ def status(url):
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
         with opener.open(url + "health", timeout=1) as response:
             body = json.load(response)
-        return isinstance(body, dict) and body.get("status") == "ok" and "counsel_key_configured" in body
+        if not isinstance(body, dict) or body.get("status") != "ok" or "counsel_key_configured" not in body:
+            return 0
+        return 2 if body.get("counsel_contract") == "archive-report-v1" else 1
     except (OSError, ValueError, urllib.error.URLError):
-        return False
+        return 0
 
 
 def stop(child):
@@ -64,7 +66,12 @@ def main():
         return 1
 
     url = f"http://127.0.0.1:{args.port}/"
-    if status(url):
+    running = status(url)
+    if running == 1:
+        print("이전 버전의 SAFE-PATH 서버가 실행 중입니다. 해당 서버 창에서 Ctrl+C로 종료한 뒤 다시 실행하세요.")
+        print("새 교사 확인함과 기록 저장 기능은 서버를 재시작해야 적용됩니다.")
+        return 1
+    if running == 2:
         print("이미 실행 중인 SAFE-PATH 서버:", url)
         if not args.no_browser:
             webbrowser.open(url)
@@ -86,8 +93,10 @@ def main():
             if child.poll() is not None:
                 print("서버 시작에 실패했습니다. 위 오류와 포트 사용 여부를 확인하세요.")
                 return 1
-            if status(url):
+            if status(url) == 2:
                 print("비교 화면:", url)
+                print("교사 확인함:", url + "teacher")
+                print("교사 접근키: backend/.env의 TEACHER_ACCESS_TOKEN 값 (브라우저에서 입력)")
                 print("이 창을 유지하세요. 서버 종료: Ctrl+C")
                 if not args.no_browser:
                     webbrowser.open(url)

@@ -4,14 +4,16 @@ import asyncio
 import io
 import json
 import time
+import tempfile
 import unittest
 import wave
+from pathlib import Path
 from unittest.mock import patch
 
 import httpx
 from fastapi.testclient import TestClient
 
-from app.config import Settings
+from app.config import BACKEND_ROOT, Settings
 from app.main import create_app
 
 
@@ -30,6 +32,8 @@ def completion(reply="이야기해 줘서 고마워요. 지금 어떤 도움이 
         "referral": referral, "urgency": "immediate" if referral == "urgent" else "normal",
         "summary": "친구 관계의 고민을 이야기했습니다.", "reason": "현재 상황의 추가 확인이 필요합니다.",
         "question": "지금 어떤 도움이 필요할까요?", "evidence": evidence or [],
+        "risk_language": referral == "urgent", "risk_kind": "suicide" if referral == "urgent" else "none",
+        "risk_evidence": evidence or [] if referral == "urgent" else [],
     }}
 
 
@@ -84,14 +88,19 @@ class CounselTests(unittest.TestCase):
                 return httpx.Response(200, content=b"\0\0" * 24000, headers={"Content-Type": "audio/pcm", "X-Credits-Charged": "0.2"})
             return httpx.Response(404)
 
-        self.app = create_app(Settings(api_key="test-secret-key", model="gpt-6-luna"), httpx.MockTransport(upstream))
+        temp_root = BACKEND_ROOT / ".runtime"
+        temp_root.mkdir(exist_ok=True)
+        self.temp = tempfile.TemporaryDirectory(dir=temp_root)
+        self.addCleanup(self.temp.cleanup)
+        self.app = create_app(Settings(api_key="test-secret-key", model="gpt-6-luna",
+            teacher_token="test-teacher-access-key-0001", database_path=Path(self.temp.name) / "archive.sqlite3"), httpx.MockTransport(upstream))
         self.client_context = TestClient(self.app, base_url="http://127.0.0.1", client=("127.0.0.1", 50100))
         self.client = self.client_context.__enter__()
         self.addCleanup(self.client_context.__exit__, None, None, None)
         self.new_session()
 
     def new_session(self, mode="baze"):
-        result = self.client.post("/api/counsel/sessions", json={"mode": mode, "consent": True})
+        result = self.client.post("/api/counsel/sessions", json={"mode": mode, "consent": True, "notice_version": "archive-report-v1"})
         self.assertEqual(result.status_code, 200)
         self.session = result.json()
         self.path = "/api/counsel/sessions/" + self.session["session_id"]
@@ -108,7 +117,7 @@ class CounselTests(unittest.TestCase):
         self.assertEqual(set(results), {"quality", "economy"})
         self.assertTrue(all(r["status"] == "ok" for r in results.values()))
         summary = self.client.post(self.path + "/finish", headers=self.headers).json()
-        self.assertEqual(summary["teacher_delivery"], "preview_only")
+        self.assertEqual(summary["teacher_delivery"], "not_reported")
         preview = self.client.post(self.path + "/handoff-preview", headers=self.headers,
             json={"variant": "quality", "teacher": "가상 상담 선생님", "summary": "확인한 요약", "consent": True})
         self.assertFalse(preview.json()["sent"])

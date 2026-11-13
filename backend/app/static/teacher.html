@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SAFE-PATH · 교사 확인함</title><link rel="stylesheet" href="/static/style.css"><link rel="stylesheet" href="/static/reporting.css"><script src="/static/teacher.js" defer></script></head>
+<body class="teacher-page">
+<header class="topbar"><a class="brand" href="/teacher"><span class="brand-mark">S</span><span>SAFE-PATH<small>교사 확인함 · 상담 기록</small></span></a><div class="teacher-toolbar"><a class="button ghost" href="/">상담 화면</a><button class="button" id="refresh" disabled>새로고침</button><button class="button ghost" id="logout" hidden>나가기</button></div></header>
+<main class="teacher-content">
+  <section class="page-heading"><div><span class="eyebrow">TEACHER DESK</span><h1>학생의 도움 신호를 확인하세요.</h1><p>서로 다른 위험 발언 누적 3회 또는 즉시 위험 신호는 상담 종료 전에 보고됩니다.</p></div><span class="local-badge"><span class="dot green"></span> 로컬 보고함</span></section>
+  <form id="loginForm" class="card teacher-login"><h2>담당 교사 접속</h2><p>교사용 접속키로 보고와 상담 기록을 확인합니다. 접속키는 이 창의 메모리에만 두며 나가면 지웁니다.</p><label for="teacherKey">교사 접속키</label><input id="teacherKey" type="password" autocomplete="off" required placeholder="담당 교사용 접속키"><button class="button primary" id="loginButton" type="submit">확인함 열기</button></form>
+  <div id="teacherStatus" class="banner" role="status">교사 접속 후 기록을 표시합니다. 이 화면은 이메일·문자·메신저 발송 결과를 뜻하지 않습니다.</div>
+  <section id="dashboard" hidden>
+    <div class="teacher-stats"><div class="card"><span>미확인 보고</span><strong id="unreadCount">0</strong></div><div class="card"><span>즉시 위험 보고</span><strong id="urgentCount">0</strong></div><div class="card"><span>보관 상담</span><strong id="archiveCount">0</strong></div></div>
+    <div class="teacher-columns"><section class="card"><div class="section-top"><h2>교사 보고</h2><span class="subtle">긴급·미확인 우선 · 최근 최대 50건</span></div><div id="reportList" class="teacher-list"></div></section><section class="card"><div class="section-top"><h2>상담 보관함</h2><span class="subtle">요약·대화·감지 기록</span></div><div id="conversationList" class="teacher-list"></div></section></div>
+    <section id="recordDetail" class="card teacher-detail" hidden><div class="section-top"><div><h2 id="detailTitle">상담 기록</h2><span id="detailMode" class="pill"></span></div><button class="button primary" id="acknowledge" hidden>보고 내용 확인함</button></div><div id="detailBody"></div></section>
+  </section>
+  <footer class="page-footer"><span>자동 신호는 교사의 실제 확인과 후속 지원을 대신하지 않습니다. 익명 상담이므로 학생 신원이 확인된 것으로 해석하지 마세요.</span><a href="/docs" target="_blank" rel="noopener">API 문서 ↗</a></footer>
+</main>
+</body></html>

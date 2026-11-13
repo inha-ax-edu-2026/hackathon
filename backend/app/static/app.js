@@ -3,7 +3,7 @@ const $ = id => document.getElementById(id);
 const variants = ['quality', 'economy'];
 const names = {quality: '고품질형', economy: '가성비형'};
 const referrals = {none: '현재 연결 권고 없음 · 안전 보증 아님', check: '추가 확인 필요', recommended: '교사 연결 권고', urgent: '지금 사람의 도움 필요'};
-const state = {session: null, ended: false, busy: false, starting: false, recording: false, transcribing: false, turns: [], summary: null, generation: 0, controllers: new Set(), audioURLs: new Map(), wav: null, wavURL: null, recorder: null, stream: null, audioContext: null, animation: null, interval: null, waitTimer: null};
+const state = {session: null, ended: false, busy: false, starting: false, recording: false, transcribing: false, turns: [], summary: null, safety: null, safetyTimer: null, safetyPolling: false, generation: 0, controllers: new Set(), audioURLs: new Map(), wav: null, wavURL: null, recorder: null, stream: null, audioContext: null, animation: null, interval: null, waitTimer: null};
 let settings = null;
 let toastTimer;
 
@@ -61,7 +61,7 @@ function controls() {
 function modeBanner() {
   const real = $('modeSelect').value === 'baze';
   $('modeBanner').classList.toggle('real', real);
-  $('modeBanner').textContent = real ? 'BAZE 실제 모드 · 확인한 이야기로 두 모델을 각각 호출합니다. 녹음·상담·듣기에 학교 크레딧이 사용됩니다.' : '데모 모드에서는 고정된 예시 답변을 표시합니다. 실제 모델 성능·전사·위험도 평가는 하지 않습니다.';
+  $('modeBanner').textContent = real ? 'BAZE 실제 모드 · 확인한 이야기로 두 모델을 호출하고 상담 기록을 보관합니다. 위험 기준을 충족하면 교사 보고함에 등록합니다.' : '데모 모드 · 예시 답변을 표시하며 위험 탐지·교사 보고 규칙을 가상 사례로 시연합니다. 데모 보고는 교사 화면에도 데모로 표시됩니다.';
 }
 async function loadSettings() {
   settings = await api('/api/local/settings');
@@ -88,7 +88,33 @@ function riskBox(assessment, demo) {
   box.append(detail); return box;
 }
 function showUrgent() {
-  $('urgent').hidden = !state.turns.some(turn => Object.values(turn.results || {}).some(r => r.status === 'ok' && r.mode !== 'mock' && r.assessment.urgency === 'immediate'));
+  $('urgent').hidden = !(state.safety?.immediate || state.turns.some(turn => Object.values(turn.results || {}).some(r => r.status === 'ok' && r.mode !== 'mock' && r.assessment.urgency === 'immediate')));
+}
+function applySafety(next) {
+  if (!next) return;
+  const previous = state.safety;
+  state.safety = {...next, risk_count: Math.max(next.risk_count, previous?.risk_count || 0),
+    immediate: Boolean(next.immediate || previous?.immediate), reported: Boolean(next.reported || previous?.reported),
+    report: next.report || previous?.report || null};
+  const safety = state.safety;
+  $('safetyPanel').hidden = false;
+  $('riskCounter').textContent = `위험 표현 ${safety.risk_count} / ${safety.threshold}회`;
+  $('safetyPanel').classList.toggle('urgent-state', safety.immediate);
+  $('safetyPanel').classList.toggle('reported-state', safety.reported);
+  $('reportState').textContent = safety.reported
+    ? `${state.session?.mode === 'mock' ? '[데모] ' : ''}${safety.immediate ? '즉시 위험 신호로 ' : '위험 표현 누적으로 '}교사 확인함에 보고를 등록했습니다. ${safety.report?.status === 'acknowledged' ? '교사가 보고 내용을 확인했습니다.' : '아직 교사의 확인을 기다리고 있습니다.'}`
+    : '서로 다른 위험 발언이 3회 감지되면 보고합니다. 즉시 위험 표현은 첫 발언부터 바로 보고합니다.';
+  showUrgent();
+}
+function startSafetyPolling(generation) {
+  clearInterval(state.safetyTimer);
+  state.safetyTimer = setInterval(async () => {
+    if (generation !== state.generation || !state.session || !state.busy || state.safetyPolling) return;
+    state.safetyPolling = true;
+    try { const result = await api(endpoint('safety')); if (generation === state.generation) applySafety(result); }
+    catch { /* 주 요청의 결과·오류를 유지하고 다음 조회에서 재확인한다. */ }
+    finally { if (generation === state.generation) state.safetyPolling = false; }
+  }, 1500);
 }
 function renderChats(pending = []) {
   for (const variant of variants) {
@@ -127,7 +153,8 @@ async function start() {
   if (!$('consentCheck').checked || state.starting) return;
   state.starting = true; controls();
   try {
-    state.session = await api('/api/counsel/sessions', {method: 'POST', json: {mode: $('modeSelect').value, consent: true}});
+    state.session = await api('/api/counsel/sessions', {method: 'POST', json: {mode: $('modeSelect').value, consent: true, notice_version: 'archive-report-v1'}});
+    applySafety(state.session.safety);
     state.ended = false; $('consentBox').hidden = true; $('composer').hidden = false;
     $('qualityModel').textContent = state.session.models.quality; $('economyModel').textContent = state.session.models.economy;
     flow(1); $('transcript').focus(); toast('상담을 시작했습니다. 같은 이야기로 두 모델을 비교해 보세요.');
@@ -143,15 +170,20 @@ async function send(retryTurn = null) {
   if (!retryTurn) state.turns.push(turn);
   state.busy = true; controls(); renderChats(retryTurn ? variants.filter(v => turn.results[v].status === 'error') : []); flow(2);
   try {
+    const safety = await api(endpoint('safety'), {method: 'POST', json: {text, request_id: requestID}});
+    if (generation !== state.generation) return;
+    applySafety(safety);
+    startSafetyPolling(generation);
     const result = await api(endpoint('messages'), {method: 'POST', json: {text, request_id: requestID, retry_failed: Boolean(retryTurn)}});
     if (generation !== state.generation) return;
     turn.results = result.results;
+    applySafety(result.safety);
     if (!retryTurn) { $('transcript').value = ''; clearRecording(); }
   } catch (error) {
     if (generation !== state.generation) return;
     for (const variant of variants) if (!turn.results[variant] || turn.results[variant].status === 'error') turn.results[variant] = {status: 'error', error: error.message};
     toast(error.message, true);
-  } finally { if (generation === state.generation) { state.busy = false; renderChats(); controls(); } }
+  } finally { if (generation === state.generation) { clearInterval(state.safetyTimer); state.safetyPolling = false; state.busy = false; renderChats(); controls(); } }
 }
 async function listenReply(variant, turn, result, button, parent) {
   if (state.ended) return;
@@ -285,6 +317,7 @@ async function finish() {
     const summary = await api(endpoint('finish'), {method: 'POST'});
     if (generation !== state.generation) return;
     state.summary = summary; state.ended = true;
+    applySafety(summary.safety);
     if ('speechSynthesis' in window) speechSynthesis.cancel(); document.querySelectorAll('audio').forEach(audio => audio.pause()); clearRecording();
     state.audioURLs.forEach(url => URL.revokeObjectURL(url)); state.audioURLs.clear();
     $('summaryResults').replaceChildren();
@@ -310,20 +343,21 @@ function updateHandoff() {
 async function reset() {
   const previous = state.session;
   state.generation++; state.controllers.forEach(c => c.abort()); state.controllers.clear();
-  clearTimeout(state.waitTimer); state.waitResolve?.();
+  clearTimeout(state.waitTimer); clearInterval(state.safetyTimer); state.waitResolve?.();
   if (state.recorder && state.recorder.state !== 'inactive') { try { state.recorder.stop(); } catch {} }
   stopTracks(); if ('speechSynthesis' in window) speechSynthesis.cancel();
   document.querySelectorAll('audio').forEach(audio => audio.pause()); clearRecording();
   state.audioURLs.forEach(url => URL.revokeObjectURL(url)); state.audioURLs.clear();
-  Object.assign(state, {session: null, ended: false, busy: false, starting: false, transcribing: false, turns: [], summary: null});
+  Object.assign(state, {session: null, ended: false, busy: false, starting: false, transcribing: false, turns: [], summary: null, safety: null, safetyPolling: false});
+  $('safetyPanel').hidden = true;
   $('consentBox').hidden = false; $('composer').hidden = true; $('summarySection').hidden = true; $('transcript').value = ''; $('recordTime').textContent = '00:00';
   $('consentCheck').checked = false; $('handoffSummary').value = ''; $('teacher').value = ''; $('handoffResult').textContent = '';
   $('handoffConsent').checked = false; $('summaryResults').replaceChildren(); controls(); renderChats(); flow(0);
   if (previous) {
     try {
       const response = await fetch(`/api/counsel/sessions/${previous.session_id}`, {method: 'DELETE', headers: {'X-Session-Token': previous.session_token}});
-      if (!response.ok && response.status !== 404) toast('화면은 초기화했지만 서버 삭제를 확인하지 못했습니다. 30분 미사용 시 자동 정리됩니다.', true);
-    } catch { toast('서버 삭제 확인에 실패했습니다. 서버 세션은 30분 미사용 시 정리됩니다.', true); }
+      if (!response.ok && response.status !== 404) toast('접속 세션 종료를 확인하지 못했습니다. 저장된 상담 기록과 보고는 유지됩니다.', true);
+    } catch { toast('접속 세션 종료 확인에 실패했습니다. 저장된 상담 기록과 보고는 유지됩니다.', true); }
   }
   loadSettings().catch(error => toast(error.message, true));
 }
@@ -377,6 +411,7 @@ $('previewHandoff').addEventListener('click', async () => {
   } catch (error) { if (generation === state.generation) toast(error.message, true); }
 });
 window.addEventListener('beforeunload', () => {
+  clearInterval(state.safetyTimer);
   stopTracks(); if ('speechSynthesis' in window) speechSynthesis.cancel();
   if (state.session) fetch(endpoint('').replace(/\/$/, ''), {method: 'DELETE', headers: {'X-Session-Token': state.session.session_token}, keepalive: true}).catch(() => {});
 });

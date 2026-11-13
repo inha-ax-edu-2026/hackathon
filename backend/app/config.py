@@ -26,6 +26,9 @@ class Settings:
     stt_model: str = "stt-async-v6"
     tts_model: str = "gemini-3.8-flash-tts"
     tts_voice: str = "Sulafat"
+    teacher_token: str = field(default="", repr=False)
+    database_path: Path = BACKEND_ROOT / "data" / "safepath.sqlite3"
+    risk_threshold: int = 3
     cors_origins: tuple[str, ...] = (
         "http://localhost:5173",
         "http://127.0.0.1:5173",
@@ -48,6 +51,12 @@ class Settings:
             raise ValueError("BAZE_CHAT_PATH는 /로 시작하는 API 경로여야 합니다.")
         if not math.isfinite(self.timeout_seconds) or self.timeout_seconds <= 0:
             raise ValueError("BAZE_TIMEOUT_SECONDS는 양수여야 합니다.")
+        if self.risk_threshold != 3:
+            raise ValueError("현재 교사 보고 기준은 서로 다른 위험 발언 3회입니다.")
+        if self.teacher_token and len(self.teacher_token) < 16:
+            raise ValueError("TEACHER_ACCESS_TOKEN은 16자 이상이어야 합니다.")
+        if not Path(self.database_path).resolve().is_relative_to(BACKEND_ROOT.resolve()):
+            raise ValueError("상담 데이터베이스는 backend 폴더 안에 두세요.")
 
     @property
     def chat_url(self) -> str:
@@ -92,5 +101,7 @@ class Settings:
             stt_model=read("BAZE_STT_MODEL", defaults.stt_model),
             tts_model=read("BAZE_TTS_MODEL", defaults.tts_model),
             tts_voice=read("BAZE_TTS_VOICE", defaults.tts_voice),
+            teacher_token=read("TEACHER_ACCESS_TOKEN"),
+            database_path=BACKEND_ROOT / read("COUNSEL_DATABASE_PATH", "data/safepath.sqlite3"),
             cors_origins=tuple(origin.strip() for origin in origins.split(",") if origin.strip()),
         )

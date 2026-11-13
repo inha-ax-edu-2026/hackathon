@@ -1,4 +1,4 @@
-"""녹음형 비교 상담. 원음은 메모리에서만 처리하고 세션은 30분 후 만료한다."""
+"""녹음형 상담·위험 누적·즉시 교사 보고. 접속 세션과 영구 보관 기록을 구분한다."""
 
 import asyncio
 import io
@@ -12,6 +12,8 @@ from fastapi import APIRouter, Header, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError
 
 from app.gateway import Gateway
+from app.archive import ArchiveStore
+from app.safety import SafetySignal, screen_text
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=4000)]
 Variant = Literal["quality", "economy"]
@@ -21,7 +23,7 @@ TTL = 1800
 PROMPT = """너는 SAFE-PATH의 AI 사전 상담 도우미다. 가상 학생 상담 테스트이며 전문 상담이나 진단을 대체하지 않는다.
 학생의 말에 공감하고 비난하거나 추궁하지 말고 한국어로 2~4문장, 확인 질문은 최대 하나만 한다.
 학생이 말하지 않은 사실, 신원, 진단을 만들지 말고 실명·학번·연락처를 요구하지 않는다.
-비밀 보장이나 교사에게 이미 연락했다는 약속을 하지 않는다. 교사 연결은 제안이며 실제 전송 기능은 없다.
+절대적인 비밀 보장이나 교사가 이미 확인했다는 약속을 하지 않는다. 보고함 등록 여부는 서버 화면이 안내한다.
 단어만으로 판단하지 말고 부정, 인용, 과거와 현재, 타인의 경험, 지속성, 구체적인 현재 위험을 구분한다.
 명백히 임박한 위해가 의심되면 종료를 기다리지 말고 지금 안전한 장소로 이동해 가까운 믿을 만한 어른이나 담당 교사의 도움을 받도록 말한다.
 학생이 원하면 위험 분류와 관계없이 교사 도움을 요청할 수 있다고 안내한다. 불확실하면 안전하다고 단정하지 않고 check로 확인한다.
@@ -32,6 +34,13 @@ recommended=교사 연결 권고, urgent=지금 사람의 도움 필요. urgent�
 urgency는 normal/soon/immediate 중 하나. summary는 학생이 말한 사실만으로 지금까지의 상담을 2~3문장으로 정리한다.
 reason에는 판단의 짧은 근거, question에는 필요한 확인 질문 또는 빈 문자열을 넣는다.
 evidence는 학생이 실제 말한 문장에 그대로 포함된 짧은 인용 문자열 최대 4개다. 추측하거나 조작하지 않는다.
+추가로 risk_language는 이번 학생 발언에 현재의 자해·자살·위협·폭력·학대·괴롭힘 관련 위험 신호가 있는지 나타낸다.
+단순한 일반 고민은 자동으로 위험 신호로 세지 않는다. 과거 설명·교육 예문·부정·인용의 맥락을 확인한다.
+risk_kind는 none/suicide/self_harm/violence/bullying/abuse/other 중 하나다.
+risk_evidence는 반드시 이번 학생 발언에 그대로 포함된 짧은 인용이다. 이전 발언을 재인용해 새 감지 횟수로 세지 않는다.
+risk_language가 false면 risk_kind는 none, risk_evidence는 빈 배열이다. true면 kind는 none이 아니고 인용 근거가 필요하다.
+현재 위험 신호가 서로 다른 발언에서 3회 누적되거나 즉시 위험이 확인되면 서버가 교사 보고함에 자동 등록한다.
+외부 전화·이메일·메신저 전송이나 교사가 이미 확인했다는 말을 만들어내지 않는다.
 """
 
 
@@ -46,6 +55,9 @@ class Assessment(StrictModel):
     reason: Annotated[str, StringConstraints(min_length=1, max_length=1000)]
     question: Annotated[str, StringConstraints(max_length=500)]
     evidence: list[Annotated[str, StringConstraints(min_length=1, max_length=500)]] = Field(max_length=4)
+    risk_language: bool
+    risk_kind: Literal["none", "suicide", "self_harm", "violence", "bullying", "abuse", "other"]
+    risk_evidence: list[Annotated[str, StringConstraints(min_length=1, max_length=500)]] = Field(max_length=4)
 
 
 class TurnOutput(StrictModel):
@@ -56,6 +68,7 @@ class TurnOutput(StrictModel):
 class StartRequest(StrictModel):
     mode: Literal["mock", "baze"]
     consent: Literal[True]
+    notice_version: Literal["archive-report-v1"]
 
 
 class MessageRequest(StrictModel):
@@ -93,16 +106,19 @@ class Session:
 
 
 class Counsel:
-    def __init__(self):
+    def __init__(self, archive: ArchiveStore):
         self.sessions: dict[str, Session] = {}
+        self.archive = archive
 
     def cleanup(self):
         now = time.monotonic()
         for sid, session in list(self.sessions.items()):
             if now - session.touched > TTL:
-                self.remove(sid)
+                self.remove(sid, status="expired")
 
-    def remove(self, sid):
+    def remove(self, sid, status="closed"):
+        if sid in self.sessions:
+            self.archive.finish(sid, status=status)
         session = self.sessions.pop(sid, None)
         if session:
             session.deleted = True
@@ -132,6 +148,22 @@ class Counsel:
         if session.closed:
             raise HTTPException(409, "마무리한 상담의 늦은 응답은 폐기했습니다.")
 
+    def precheck(self, sid: str, body: MessageRequest):
+        try:
+            self.archive.register_turn(sid, body.request_id, body.text)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
+        return self.archive.observe(sid, body.request_id, screen_text(body.text), "rule")
+
+    @staticmethod
+    def model_signal(result):
+        if result.get("status") != "ok":
+            return SafetySignal()
+        a = result["assessment"]
+        if not a["risk_language"]:
+            return SafetySignal()
+        return SafetySignal(True, a["urgency"] == "immediate", a["risk_kind"], a["reason"], tuple(a["risk_evidence"]))
+
     async def result(self, session, variant, text):
         started = time.perf_counter()
         try:
@@ -144,7 +176,7 @@ class Counsel:
                 ), assessment=Assessment(referral="check", urgency="normal",
                     summary="가상 사례로 상담 비교 흐름을 확인했습니다. 실제 상담 내용의 요약이나 위험 판정이 아닙니다.",
                     reason="고정된 데모 결과입니다. 위험도 판단은 수행하지 않았습니다.",
-                    question="어떤 도움이 필요한가요?", evidence=[]))
+                    question="어떤 도움이 필요한가요?", evidence=[], risk_language=False, risk_kind="none", risk_evidence=[]))
                 usage = {}
                 await asyncio.sleep(0.15 if variant == "economy" else 0.3)
             else:
@@ -163,6 +195,11 @@ class Counsel:
                 a = output.assessment
                 if (a.referral == "urgent") != (a.urgency == "immediate"):
                     raise ValueError("긴급성 불일치")
+                if a.risk_language:
+                    if a.risk_kind == "none" or not a.risk_evidence or any(e not in text for e in a.risk_evidence):
+                        raise ValueError("현재 위험 발언의 근거 불일치")
+                elif a.risk_kind != "none" or a.risk_evidence:
+                    raise ValueError("위험 언어 출력 불일치")
             return {"status": "ok", "model": session.models[variant], "mode": session.mode,
                 **output.model_dump(), "elapsed_ms": round((time.perf_counter() - started) * 1000), "usage": usage}
         except HTTPException as exc:
@@ -190,18 +227,36 @@ async def start(body: StartRequest, request: Request):
         raise HTTPException(429, "열린 상담이 너무 많습니다. 기존 상담을 정리하세요.")
     sid, token = secrets.token_urlsafe(18), secrets.token_urlsafe(32)
     models = {"quality": settings.quality_model, "economy": settings.economy_model}
+    svc.archive.create_session(sid, body.mode)
     svc.sessions[sid] = Session(token, body.mode, Gateway(settings, request.app.state.client), models)
     return {"session_id": sid, "session_token": token, "mode": body.mode,
         "models": models, "stt_model": settings.stt_model, "tts_model": settings.tts_model,
-        "expires_in_seconds": TTL, "max_recording_seconds": 120}
+        "expires_in_seconds": TTL, "max_recording_seconds": 120,
+        "archive_id": sid, "safety": svc.archive.safety(sid), "archive_retained": True}
 
 
-@router.delete("/sessions/{sid}", summary="서버 메모리의 상담·전사·음성 정리")
+@router.delete("/sessions/{sid}", summary="접속 세션·음성 정리 (보관 상담·교사 보고는 유지)")
 async def delete(sid: str, request: Request, x_session_token: str = Header(default="")):
     svc = service(request)
     svc.get(sid, x_session_token, active=False)
     svc.remove(sid)
-    return {"deleted": True}
+    return {"deleted": True, "archive_retained": True}
+
+
+@router.post("/sessions/{sid}/safety", summary="LLM 대기 전 현재 발언 검사·위험 누적·즉시 교사 보고")
+async def precheck(sid: str, body: MessageRequest, request: Request, x_session_token: str = Header(default="")):
+    svc = service(request)
+    session = svc.get(sid, x_session_token)
+    async with session.lock:
+        svc.ensure_active(session)
+        return {**svc.precheck(sid, body), "mode": session.mode}
+
+
+@router.get("/sessions/{sid}/safety", summary="모델 대기 중에도 교사 보고 상태 확인")
+async def safety_status(sid: str, request: Request, x_session_token: str = Header(default="")):
+    svc = service(request)
+    session = svc.get(sid, x_session_token, active=False)
+    return {**svc.archive.safety(sid), "mode": session.mode}
 
 
 @router.post("/sessions/{sid}/messages", summary="같은 발언으로 두 모델 동시 호출")
@@ -212,15 +267,17 @@ async def message(sid: str, body: MessageRequest, request: Request, x_session_to
         svc.ensure_alive(session)
         if session.closed:
             raise HTTPException(409, "마무리한 상담입니다.")
+        svc.precheck(sid, body)
         turn = next((t for t in session.turns if t["request_id"] == body.request_id), None)
         if turn:
             if turn["text"] != body.text:
                 raise HTTPException(409, "같은 요청 ID로 다른 문장을 보낼 수 없습니다.")
             if not body.retry_failed:
+                turn["safety"] = svc.archive.safety(sid)
                 return turn
             if turn is not session.turns[-1]:
                 raise HTTPException(409, "마지막 발언만 재시도할 수 있습니다.")
-            variants = [v for v in session.models if turn["results"][v]["status"] == "error"]
+            variants = [v for v in session.models if turn["results"].get(v, {}).get("status") != "ok"]
             # 재시도할 현재 발언은 아래 history에서 한 번만 사용한다.
             session.turns.pop()
         else:
@@ -229,10 +286,20 @@ async def message(sid: str, body: MessageRequest, request: Request, x_session_to
             turn = {"request_id": body.request_id, "text": body.text, "results": {}}
             variants = list(session.models)
         try:
-            results = await asyncio.gather(*(svc.result(session, v, body.text) for v in variants))
+            async def generate_variant(variant):
+                result = await svc.result(session, variant, body.text)
+                if not session.deleted and not session.closed:
+                    turn["results"][variant] = result
+                    svc.archive.save_result(sid, body.request_id, variant, result)
+                    if session.mode != "mock":
+                        svc.archive.observe(sid, body.request_id, svc.model_signal(result), variant)
+                return result
+
+            results = await asyncio.gather(*(generate_variant(v) for v in variants))
             svc.ensure_alive(session)
             turn["results"].update(zip(variants, results))
             session.turns.append(turn)
+            turn["safety"] = svc.archive.safety(sid)
             return turn
         except BaseException:
             if not session.deleted and turn["results"]:
@@ -373,8 +440,12 @@ async def finish(sid: str, request: Request, x_session_token: str = Header(defau
             summaries[variant] = {"status": "ok", "model": session.models[variant], "assessment": latest,
                 "highest_referral": peak["referral"], "highest_reason": peak["reason"],
                 "highest_evidence": peak["evidence"], "turns": len(successes)}
+        safety = svc.archive.safety(sid)
+        summary = {"mode": session.mode, "results": summaries, "safety": safety,
+            "teacher_delivery": safety["delivery"], "archive_id": sid, "archive_retained": True}
+        svc.archive.finish(sid, summary=summary)
         session.closed = True
-        session.summary = {"mode": session.mode, "results": summaries, "teacher_delivery": "preview_only"}
+        session.summary = summary
         session.turns.clear()
         session.jobs.clear()
         session.audio.clear()
@@ -390,4 +461,5 @@ async def handoff(sid: str, body: HandoffRequest, request: Request, x_session_to
     if session.summary["results"].get(body.variant, {}).get("status") != "ok":
         raise HTTPException(409, "확인 가능한 상담 요약이 없습니다.")
     return {"status": "preview_only", "sent": False, "teacher": body.teacher,
-        "summary": body.summary, "message": "전달문 미리보기입니다. 담당 교사에게 발송하지 않았습니다."}
+        "summary": body.summary, "auto_report": svc.archive.safety(sid),
+        "message": "이 편집 전달문은 미리보기이며 추가 발송하지 않았습니다. 위험 기준에 따른 교사 보고함 등록은 별도로 적용됩니다."}
