@@ -1,6 +1,6 @@
 import { ChevronRight } from 'lucide-react'
 import type { CounselCase } from '@/api/counselTypes.ts'
-import { RiskBadge } from '@/components/consult/RiskBadge.tsx'
+import { RiskBadge } from '@/components/counsel/detail/CaseBadges.tsx'
 import {
   Sheet,
   SheetContent,

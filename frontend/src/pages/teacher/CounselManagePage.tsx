@@ -1,5 +1,5 @@
 import { useTeacherCases } from '@/api/teacherCounsel.ts'
-import { TeacherCaseTable } from '@/components/consult/TeacherCaseTable.tsx'
+import { TeacherCaseTable } from '@/components/counsel/TeacherCaseTable.tsx'
 import { PageBody, PageHeader } from '@/components/shell/PageHeader.tsx'
 
 /** 교사 「개인상담 관리」 목록. 시드 개인상담 건과 전환·종료된 AI 챗봇 상담 건이 최신순으로 함께 보인다. */

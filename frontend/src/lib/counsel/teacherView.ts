@@ -1,4 +1,5 @@
 import type { CounselCase, Student } from '@/api/counselTypes.ts'
+import { formatDateTime } from '@/lib/counsel/format.ts'
 
 /** 교사 화면은 학생 이름을 가려 보인다. 「김하늘」 → 「김○○」 */
 export function maskName(name: string) {
@@ -17,22 +18,6 @@ const CHATBOT_PREFIX = /^\[AI 챗봇\]\s*/
 export function splitTitle({ kind, title }: Pick<CounselCase, 'kind' | 'title'>) {
   if (kind === 'chatbot') return { chip: 'AI 챗봇', text: title.replace(CHATBOT_PREFIX, '') }
   return { chip: '개인상담', text: title }
-}
-
-const KST_PARTS = new Intl.DateTimeFormat('ko-KR', {
-  timeZone: 'Asia/Seoul',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-})
-
-/** 「2026.11.16 16:00」 */
-export function formatDateTime(iso: string) {
-  const p = Object.fromEntries(KST_PARTS.formatToParts(new Date(iso)).map((x) => [x.type, x.value]))
-  return `${p.year}.${p.month}.${p.day} ${p.hour}:${p.minute}`
 }
 
 /**

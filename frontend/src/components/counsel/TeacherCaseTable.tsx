@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router'
 import type { CaseStatus, CounselCase } from '@/api/counselTypes.ts'
-import { RiskBadge } from '@/components/consult/RiskBadge.tsx'
+import { RiskBadge } from '@/components/counsel/detail/CaseBadges.tsx'
 import { Badge } from '@/components/ui/badge.tsx'
 import {
   Table,

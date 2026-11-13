@@ -1,9 +1,9 @@
 import { CalendarDays, Info, UserRound } from 'lucide-react'
 import type { CounselCase, CounselForm } from '@/api/counselTypes.ts'
+import { formatDateTime } from '@/lib/counsel/format.ts'
 import { DEMO_TEACHER_NAME } from '@/lib/counsel/identity.ts'
 import { CASE_STATUS_LABEL } from '@/lib/counsel/labels.ts'
 import { DetailCard, InfoRows } from './DetailCard.tsx'
-import { formatDateTime } from './format.ts'
 
 const PILL = 'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium'
 
