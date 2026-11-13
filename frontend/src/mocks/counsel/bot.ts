@@ -58,7 +58,7 @@ const answerOf = (form: CounselForm, hint: string) =>
   form.answers.find((a) => a.question.includes(hint) && a.answer.trim())?.answer.trim() ?? null
 
 export function greeting(form: CounselForm) {
-  const concern = answerOf(form, '고민')
+  const concern = answerOf(form, '어떤 고민')
   const opening = concern
     ? `양식에 "${clip(concern, 36)}"라고 적어 줬네. 이야기해 줘서 고마워.`
     : `${form.topic} 이야기를 하고 싶구나. 와 줘서 고마워.`

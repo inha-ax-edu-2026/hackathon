@@ -78,6 +78,19 @@ describe('상담 건 만들기', () => {
     expect(created.messages[0].text.length).toBeGreaterThan(0)
   })
 
+  it('첫 인사는 기간 답이 아니라 고민 답을 짚는다', async () => {
+    const created = await createCase({
+      topic: '교우관계',
+      answers: [
+        { question: '이 고민이 이어진 기간은 어느 정도인가요?', answer: '1~2주' },
+        { question: '어떤 고민이 있나요?', answer: '반 친구들과 사이가 안 좋아요' },
+      ],
+    })
+
+    expect(created.messages[0].text).toContain('반 친구들과 사이가 안 좋아요')
+    expect(created.messages[0].text).not.toContain('1~2주')
+  })
+
   it('학생 목록에는 보이고 교사 목록에는 보이지 않는다', async () => {
     const { case: created } = await createCase()
 
