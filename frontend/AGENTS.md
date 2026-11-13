@@ -39,8 +39,11 @@ src/
 ├── router.tsx # 경로 정의. 새 페이지는 children에 추가
 ├── pages/     # 경로 하나당 페이지 컴포넌트 하나 (HomePage.tsx 등)
 ├── components/
-│   └── ui/    # shadcn/ui 컴포넌트 (CLI가 생성)
+│   ├── ui/      # shadcn/ui 컴포넌트 (CLI가 생성)
+│   └── consult/ # 상담 화면 조각 (학생 휴대폰·교사 대시보드 등)
+├── hooks/     # 커스텀 훅 (useConsultFlow: 상담 플로우 상태, useSpeech: 음성 입력)
 ├── lib/
+│   ├── consult/        # 상담 타입·상수(model.ts)와 목 AI 로직(mockAi.ts)
 │   ├── api.ts          # apiFetch: 백엔드 호출 공통 fetch 래퍼
 │   ├── utils.ts        # cn(): Tailwind 클래스 병합
 │   └── queryClient.ts  # QueryClient 기본 옵션

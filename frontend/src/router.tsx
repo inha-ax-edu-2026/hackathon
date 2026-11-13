@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router'
 import App from '@/App.tsx'
+import ConsultPage from '@/pages/ConsultPage.tsx'
 import HomePage from '@/pages/HomePage.tsx'
 import NotFoundPage from '@/pages/NotFoundPage.tsx'
 
@@ -10,6 +11,7 @@ export const router = createBrowserRouter([
     element: <App />,
     children: [
       { index: true, element: <HomePage /> },
+      { path: 'consult', element: <ConsultPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

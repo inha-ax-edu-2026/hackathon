@@ -9,6 +9,7 @@ function App() {
           <NavLink to="/" className="font-semibold">
             홈
           </NavLink>
+          <NavLink to="/consult">상담</NavLink>
         </nav>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8">
