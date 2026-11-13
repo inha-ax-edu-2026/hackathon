@@ -13,11 +13,13 @@
     "check:fix": "biome check --write"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.107.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.7",
+    "@tanstack/react-query-devtools": "^5.107.1",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
