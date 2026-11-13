@@ -44,6 +44,10 @@ export function DocumentsSlot({ caseId, documents }: DocumentsSlotProps) {
 }
 
 function DocumentsCard({ caseId, documents }: DocumentsSlotProps) {
+  // 저장하지 않은 초안 수정은 서류 종류별로 카드가 들고 있다. 체크를 뺐다가 다시 넣어도 남는다.
+  const [edits, setEdits] = useState<Partial<Record<DocumentKind, string>>>({})
+  const setEdit = (kind: DocumentKind, text: string | undefined) =>
+    setEdits(({ [kind]: _, ...rest }) => (text === undefined ? rest : { ...rest, [kind]: text }))
   const update = useUpdateDocument(caseId)
   const approve = useApproveDocument(caseId)
   const error = update.error ?? approve.error
@@ -73,6 +77,8 @@ function DocumentsCard({ caseId, documents }: DocumentsSlotProps) {
             <DocumentRow
               key={doc.kind}
               doc={doc}
+              edit={edits[doc.kind]}
+              onEdit={(text) => setEdit(doc.kind, text)}
               onSelect={(selected) => update.mutate({ kind: doc.kind, selected })}
               onSaveDraft={(draft) => update.mutateAsync({ kind: doc.kind, draft })}
               onApprove={(kind) => approve.mutateAsync(kind)}
@@ -169,12 +175,15 @@ function SavedMinutes({ documents }: { documents: CaseDocuments }) {
 
 type DocumentRowProps = {
   doc: CounselDocument
+  /** 저장하지 않은 초안 수정. 없으면 서버 초안을 그대로 보인다. */
+  edit: string | undefined
+  onEdit: (text: string | undefined) => void
   onSelect: (selected: boolean) => void
   onSaveDraft: (draft: string) => Promise<unknown>
   onApprove: (kind: DocumentKind) => Promise<unknown>
 }
 
-function DocumentRow({ doc, onSelect, onSaveDraft, onApprove }: DocumentRowProps) {
+function DocumentRow({ doc, edit, onEdit, onSelect, onSaveDraft, onApprove }: DocumentRowProps) {
   const id = `document-${doc.kind}`
   return (
     <li className="p-4">
@@ -201,7 +210,15 @@ function DocumentRow({ doc, onSelect, onSaveDraft, onApprove }: DocumentRowProps
             )}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">{doc.recommend_reason}</p>
-          {doc.selected && <DraftEditor doc={doc} onSave={onSaveDraft} onApprove={onApprove} />}
+          {doc.selected && (
+            <DraftEditor
+              doc={doc}
+              edit={edit}
+              onEdit={onEdit}
+              onSave={onSaveDraft}
+              onApprove={onApprove}
+            />
+          )}
         </div>
       </div>
     </li>
@@ -210,26 +227,20 @@ function DocumentRow({ doc, onSelect, onSaveDraft, onApprove }: DocumentRowProps
 
 type DraftEditorProps = {
   doc: CounselDocument
+  edit: string | undefined
+  onEdit: (text: string | undefined) => void
   onSave: (draft: string) => Promise<unknown>
   onApprove: (kind: DocumentKind) => Promise<unknown>
 }
 
 /**
- * 초안 편집기. 편집 중인 글은 이 컴포넌트가 들고 있다가 「저장」할 때만 서버에 보낸다.
- * 상세를 5초마다 다시 받아도, 고치던 글이 있으면 서버 값으로 덮어쓰지 않는다.
+ * 초안 편집기. 고치는 글(`edit`)은 카드가 들고 있다가 「저장」할 때만 서버에 보낸다.
+ * 고치던 글이 없으면 서버 초안(저장 응답·다른 탭·폴링)을 그대로 따라가고, 있으면 덮어쓰지 않는다.
  */
-function DraftEditor({ doc, onSave, onApprove }: DraftEditorProps) {
-  const [text, setText] = useState(doc.draft)
-  const [base, setBase] = useState(doc.draft)
+function DraftEditor({ doc, edit, onEdit, onSave, onApprove }: DraftEditorProps) {
   const [busy, setBusy] = useState(false)
-
-  // 서버 초안이 바뀌었을 때(저장 응답·다른 탭), 고치던 글이 없을 때만 따라간다.
-  if (doc.draft !== base) {
-    setBase(doc.draft)
-    if (text === base) setText(doc.draft)
-  }
-
-  const dirty = text !== base
+  const text = edit ?? doc.draft
+  const dirty = text !== doc.draft
   const empty = text.trim() === ''
 
   async function run(action: () => Promise<unknown>) {
@@ -248,7 +259,7 @@ function DraftEditor({ doc, onSave, onApprove }: DraftEditorProps) {
       <Textarea
         aria-label={`${doc.title} 초안`}
         value={text}
-        onChange={(event) => setText(event.target.value)}
+        onChange={(event) => onEdit(event.target.value)}
         className="min-h-40 leading-relaxed"
       />
       <div className="flex flex-wrap items-center justify-end gap-2">
@@ -256,7 +267,7 @@ function DraftEditor({ doc, onSave, onApprove }: DraftEditorProps) {
           <span className="mr-auto text-sm text-warning-strong">저장하지 않은 수정이 있어요.</span>
         )}
         {dirty && (
-          <Button variant="outline" size="sm" disabled={busy} onClick={() => setText(base)}>
+          <Button variant="outline" size="sm" disabled={busy} onClick={() => onEdit(undefined)}>
             되돌리기
           </Button>
         )}
@@ -265,7 +276,12 @@ function DraftEditor({ doc, onSave, onApprove }: DraftEditorProps) {
             variant="outline"
             size="sm"
             disabled={busy || empty}
-            onClick={() => run(() => onSave(text))}
+            onClick={() =>
+              run(async () => {
+                await onSave(text)
+                onEdit(undefined)
+              })
+            }
           >
             저장
           </Button>
@@ -276,7 +292,10 @@ function DraftEditor({ doc, onSave, onApprove }: DraftEditorProps) {
           // 고친 글이 있으면 저장한 뒤 승인한다(저장하면 승인이 풀리므로 순서가 중요하다).
           onClick={() =>
             run(async () => {
-              if (dirty) await onSave(text)
+              if (dirty) {
+                await onSave(text)
+                onEdit(undefined)
+              }
               await onApprove(doc.kind)
             })
           }
