@@ -8,6 +8,7 @@
 - 포맷·린트: Biome (`biome.json`) — Prettier·ESLint 대신 사용. 2칸 들여쓰기, 작은따옴표, 세미콜론 생략, 줄 너비 100
 - 라우팅: React Router (`createBrowserRouter`, `src/router.tsx`)
 - 서버 상태·API 호출: TanStack Query v5 (+ 개발 모드 Devtools)
+- 목 API: MSW (`src/mocks/`). `.env`에 `VITE_USE_MOCK=true`면 켜진다
 - 스타일: Tailwind CSS v4 (`@tailwindcss/vite` 플러그인, 설정 파일 없이 `src/index.css`의 `@import 'tailwindcss'`로 로드). 커스텀 토큰은 같은 파일의 `@theme`에 추가한다
 - 패키지 매니저: npm (`package-lock.json` 커밋)
 
@@ -39,6 +40,9 @@ src/
 ├── lib/
 │   ├── api.ts          # apiFetch: 백엔드 호출 공통 fetch 래퍼
 │   └── queryClient.ts  # QueryClient 기본 옵션
+├── mocks/
+│   ├── handlers.ts     # 목 API 응답 정의
+│   └── browser.ts      # MSW 워커
 └── assets/    # 이미지 등 정적 에셋
 ```
 
@@ -50,5 +54,6 @@ src/
 - API 호출은 컴포넌트에서 `fetch`를 직접 쓰지 않고 `useQuery`·`useMutation` + `apiFetch`로 한다.
   기능별 쿼리 훅은 `src/api/{도메인}.ts`에 모으고, query key는 `['도메인', ...파라미터]` 배열로 쓴다.
 - API 스펙은 `backend/`가 단일 출처다. 응답 형식은 backend 정의를 읽어 맞춘다.
-- 백엔드 장애에 대비해 데모 경로에는 목(mock) 데이터 폴백을 둔다.
+- 백엔드 장애에 대비해 데모 경로의 API는 `src/mocks/handlers.ts`에 목 응답을 둔다. 컴포넌트·쿼리 훅 코드는 목 여부를 몰라야 한다.
+  핸들러가 없는 요청은 실제 백엔드로 그대로 간다. `public/mockServiceWorker.js`는 `msw init`이 만든 파일이라 손대지 않는다.
 - 사용자 대상 문구는 한국어로 작성한다.
