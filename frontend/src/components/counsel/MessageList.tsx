@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import type { Message } from '@/api/counselTypes.ts'
 import { cn } from '@/lib/utils.ts'
 
@@ -22,15 +23,20 @@ type MessageListProps = {
   messages: Message[]
   /** 목록 아래에 이어 붙일 내용(입력 중 표시, 안내 카드 등). 05번에서 쓴다. */
   children?: React.ReactNode
+  /** 대화 중간에 끼워 넣을 안내(교사 알림 등)와 그 위치. messages[after] 뒤에 둔다. */
+  insert?: { after: number; node: React.ReactNode }
   className?: string
 }
 
 /** 상담 대화 목록. 읽기 전용 보기와 진행 중 대화가 함께 쓴다. */
-export function MessageList({ messages, children, className }: MessageListProps) {
+export function MessageList({ messages, children, insert, className }: MessageListProps) {
   return (
     <div role="log" aria-label="상담 대화" className={cn('flex flex-col gap-3', className)}>
-      {messages.map((m) => (
-        <MessageBubble key={m.id} message={m} />
+      {messages.map((m, i) => (
+        <Fragment key={m.id}>
+          <MessageBubble message={m} />
+          {insert?.after === i && insert.node}
+        </Fragment>
       ))}
       {children}
     </div>

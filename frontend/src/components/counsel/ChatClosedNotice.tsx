@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button.tsx'
 import { COUNSEL_REGISTER_PATH, STUDENT_COUNSEL_PATH } from '@/lib/counsel/paths.ts'
 
 /** 위기 연락처. 위험도가 높을 때만 전환 안내에 붙는다. */
-function CrisisContacts() {
+export function CrisisContacts() {
   return (
     <div className="space-y-1 rounded-lg bg-muted px-4 py-3 text-sm">
       <p className="font-medium">지금 많이 힘들다면 바로 이야기할 수 있어요.</p>

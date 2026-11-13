@@ -1,4 +1,4 @@
-import { ChevronLeft, UserRound } from 'lucide-react'
+import { ChevronLeft, HeartHandshake, UserRound } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useFinishCase, useHandoff, useSendMessage, useStudentCase } from '@/api/studentCounsel.ts'
@@ -10,6 +10,7 @@ import {
   CloseChatConfirmDialog,
 } from '@/components/counsel/CloseChatConfirmDialog.tsx'
 import { ExampleSentence } from '@/components/counsel/ExampleSentence.tsx'
+import { HandoffNotice, handoffNoticeIndex } from '@/components/counsel/HandoffNotice.tsx'
 import { MessageBubble, MessageList } from '@/components/counsel/MessageList.tsx'
 import { MicButton } from '@/components/counsel/MicButton.tsx'
 import { TypingIndicator } from '@/components/counsel/TypingIndicator.tsx'
@@ -37,7 +38,8 @@ function errorDetail(error: unknown) {
 /**
  * AI 챗봇 상담(`/student/counsel/chatbot/:id`).
  * 대화가 열려 있으면(chat_open) 대화하고, 학생이 버튼으로 닫았으면 읽기 전용으로 보이고 아래에 안내 카드를 둔다.
- * 키워드 감지로 교사에게 알림이 가도 대화는 이어진다. 감지 키워드·위험도·알림 여부는 학생에게 보이지 않는다.
+ * 키워드 감지로 교사에게 알림이 가도 대화는 이어진다. 알림이 간 자리에 안내 블록을 끼우고 머리말 설명을 바꿔 학생도 알게 한다.
+ * 감지 키워드·위험도는 학생에게 보이지 않는다(위험도 높음일 때 위기 연락처만 덧붙는다).
  */
 function ChatbotChatPage() {
   const { id = '' } = useParams()
@@ -89,6 +91,9 @@ function ChatbotChatPage() {
   const studentTurns = messages.filter((m) => m.role === 'student').length
   const busy = sendMessage.isPending || handoff.isPending || finish.isPending
   const failure = [sendMessage, handoff, finish].find((m) => m.isError)?.error
+  // 키워드 감지로 선생님께 알림이 갔으면 그 자리에 안내 블록을 끼워 학생도 알게 한다.
+  const noticeAfter = handoffNoticeIndex(counselCase, messages)
+  const notified = open && counselCase.handoff !== null
 
   const askToClose = (action: CloseChatAction) => {
     setConfirmAction(action)
@@ -119,11 +124,18 @@ function ChatbotChatPage() {
       <PageHeader
         title={counselCase.title}
         description={
-          open
-            ? 'AI 챗봇과 이야기해요.'
-            : counselCase.handoff
-              ? '선생님께 전달된 상담이에요. 대화는 읽기만 할 수 있어요.'
-              : '끝난 상담이에요. 대화는 읽기만 할 수 있어요.'
+          notified ? (
+            <span className="inline-flex items-center gap-1.5">
+              <HeartHandshake className="size-4 text-info-strong" />
+              선생님께도 전달됐어요. 여기서 계속 이야기할 수 있어요.
+            </span>
+          ) : open ? (
+            'AI 챗봇과 이야기해요.'
+          ) : counselCase.handoff ? (
+            '선생님께 전달된 상담이에요. 대화는 읽기만 할 수 있어요.'
+          ) : (
+            '끝난 상담이에요. 대화는 읽기만 할 수 있어요.'
+          )
         }
         back={BACK}
         actions={
@@ -156,7 +168,23 @@ function ChatbotChatPage() {
               open ? 'h-[calc(100svh-330px)]' : 'h-[calc(100svh-480px)]',
             )}
           >
-            <MessageList messages={messages}>
+            <MessageList
+              messages={messages}
+              insert={
+                noticeAfter >= 0
+                  ? {
+                      after: noticeAfter,
+                      node: (
+                        <HandoffNotice
+                          counselCase={counselCase}
+                          onTalkToTeacher={open ? () => askToClose('handoff') : undefined}
+                          disabled={busy}
+                        />
+                      ),
+                    }
+                  : undefined
+              }
+            >
               {pendingText && (
                 <MessageBubble
                   message={{ id: 'pending', role: 'student', text: pendingText, at: '' }}
