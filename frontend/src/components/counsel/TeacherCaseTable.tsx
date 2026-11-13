@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router'
-import type { CaseStatus, CounselCase } from '@/api/counselTypes.ts'
-import { RiskBadge } from '@/components/counsel/detail/CaseBadges.tsx'
+import type { CounselCase } from '@/api/counselTypes.ts'
+import { RiskBadge, StatusBadge } from '@/components/counsel/CaseBadges.tsx'
 import { Badge } from '@/components/ui/badge.tsx'
 import {
   Table,
@@ -11,28 +11,8 @@ import {
   TableRow,
 } from '@/components/ui/table.tsx'
 import { counselDetailPath } from '@/hooks/useHandoffToasts.tsx'
-import { CASE_STATUS_LABEL } from '@/lib/counsel/labels.ts'
 import { maskedStudentLabel, scheduleLabel, splitTitle } from '@/lib/counsel/teacherView.ts'
 import { cn } from '@/lib/utils.ts'
-
-/** 슈퍼스쿨식 외곽선 배지 색(글자·테두리). */
-const STATUS_CLASS: Record<CaseStatus, string> = {
-  in_progress: 'border-primary text-primary',
-  awaiting_approval: 'border-warning text-warning-strong',
-  awaiting_counsel: 'border-info text-info-strong',
-  completed: 'border-border text-muted-foreground',
-  in_counsel: 'border-primary text-primary',
-  awaiting_confirmation: 'border-warning text-warning-strong',
-  canceled: 'border-border text-muted-foreground',
-}
-
-function StatusBadge({ status }: { status: CaseStatus }) {
-  return (
-    <Badge variant="outline" className={cn('rounded-md bg-background', STATUS_CLASS[status])}>
-      {CASE_STATUS_LABEL[status]}
-    </Badge>
-  )
-}
 
 const CHIP_CLASS = {
   'AI 챗봇': 'bg-primary-soft text-primary',

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import type { CounselCase } from '@/api/counselTypes.ts'
 import { useStudentCases } from '@/api/studentCounsel.ts'
-import { CaseStatusBadge } from '@/components/counsel/CaseStatusBadge.tsx'
+import { StatusBadge } from '@/components/counsel/CaseBadges.tsx'
 import { CounselMethodDialog } from '@/components/counsel/CounselMethodDialog.tsx'
 import { PageBody, PageHeader } from '@/components/shell/PageHeader.tsx'
 import { Button } from '@/components/ui/button.tsx'
@@ -63,7 +63,7 @@ function StudentCounselPage() {
                     className={openable ? 'cursor-pointer border-b hover:bg-accent/60' : 'border-b'}
                   >
                     <td className="px-6 py-4">
-                      <CaseStatusBadge status={c.status} />
+                      <StatusBadge status={c.status} />
                     </td>
                     <td className="px-6 py-4">{methodLabel(c)}</td>
                     <td className="px-6 py-4">{dateLabel(c)}</td>

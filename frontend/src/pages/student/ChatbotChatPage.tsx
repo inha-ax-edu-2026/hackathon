@@ -2,7 +2,7 @@ import { ChevronLeft, UserRound } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useFinishCase, useHandoff, useSendMessage, useStudentCase } from '@/api/studentCounsel.ts'
-import { CaseStatusBadge } from '@/components/counsel/CaseStatusBadge.tsx'
+import { StatusBadge } from '@/components/counsel/CaseBadges.tsx'
 import { ChatClosedNotice } from '@/components/counsel/ChatClosedNotice.tsx'
 import { ChatComposer } from '@/components/counsel/ChatComposer.tsx'
 import { ExampleSentence } from '@/components/counsel/ExampleSentence.tsx'
@@ -131,7 +131,7 @@ function ChatbotChatPage() {
               </Button>
             </>
           ) : (
-            <CaseStatusBadge status={counselCase.status} />
+            <StatusBadge status={counselCase.status} />
           )
         }
       />
