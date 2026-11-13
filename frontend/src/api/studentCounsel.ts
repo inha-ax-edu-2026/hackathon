@@ -75,7 +75,7 @@ function usePatchDetail(id: string) {
 /**
  * 발화 보내기(제안서 6.3). 같은 `request_id`로 다시 보내면 백엔드가 같은 응답을 돌려주므로
  * 호출하는 쪽은 실패한 글을 다시 보낼 때 같은 `request_id`를 쓴다.
- * 이미 끝난 건(409)이면 상세를 다시 받아 끝난 화면으로 바뀌게 한다.
+ * 학생이 이미 대화를 닫은 건(409)이면 상세를 다시 받아 끝난 화면으로 바뀌게 한다.
  */
 export function useSendMessage(id: string) {
   const queryClient = useQueryClient()
@@ -108,12 +108,12 @@ function useCloseCase(id: string, action: 'handoff' | 'finish') {
   })
 }
 
-/** 「선생님과 상담하기」(6.4): 학생 요청으로 전환한다. */
+/** 「선생님과 상담하기」(6.4): 챗봇 대화를 닫고, 아직 전환 전이면 학생 요청으로 전환한다. */
 export function useHandoff(id: string) {
   return useCloseCase(id, 'handoff')
 }
 
-/** 「상담 끝내기」(6.5): 전환 없이 끝낸다. */
+/** 「상담 끝내기」(6.5): 챗봇 대화를 닫는다. 키워드로 이미 전환됐으면 승인대기를 그대로 둔다. */
 export function useFinishCase(id: string) {
   return useCloseCase(id, 'finish')
 }

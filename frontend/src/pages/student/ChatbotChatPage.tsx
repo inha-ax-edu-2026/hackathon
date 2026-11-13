@@ -5,8 +5,11 @@ import { useFinishCase, useHandoff, useSendMessage, useStudentCase } from '@/api
 import { StatusBadge } from '@/components/counsel/CaseBadges.tsx'
 import { ChatClosedNotice } from '@/components/counsel/ChatClosedNotice.tsx'
 import { ChatComposer } from '@/components/counsel/ChatComposer.tsx'
+import {
+  type CloseChatAction,
+  CloseChatConfirmDialog,
+} from '@/components/counsel/CloseChatConfirmDialog.tsx'
 import { ExampleSentence } from '@/components/counsel/ExampleSentence.tsx'
-import { FinishConfirmDialog } from '@/components/counsel/FinishConfirmDialog.tsx'
 import { MessageBubble, MessageList } from '@/components/counsel/MessageList.tsx'
 import { MicButton } from '@/components/counsel/MicButton.tsx'
 import { TypingIndicator } from '@/components/counsel/TypingIndicator.tsx'
@@ -33,8 +36,8 @@ function errorDetail(error: unknown) {
 
 /**
  * AI 챗봇 상담(`/student/counsel/chatbot/:id`).
- * 「상담중」이면 대화하고, 그 밖의 상태(전환·종료)면 같은 대화를 읽기 전용으로 보이고 아래에 안내 카드를 둔다.
- * 감지 키워드와 위험도는 학생에게 보이지 않는다.
+ * 대화가 열려 있으면(chat_open) 대화하고, 학생이 버튼으로 닫았으면 읽기 전용으로 보이고 아래에 안내 카드를 둔다.
+ * 키워드 감지로 교사에게 알림이 가도 대화는 이어진다. 감지 키워드·위험도·알림 여부는 학생에게 보이지 않는다.
  */
 function ChatbotChatPage() {
   const { id = '' } = useParams()
@@ -43,7 +46,9 @@ function ChatbotChatPage() {
   const handoff = useHandoff(id)
   const finish = useFinishCase(id)
   const [draft, setDraft] = useState('')
-  const [finishOpen, setFinishOpen] = useState(false)
+  // 「선생님과 상담하기」·「상담 끝내기」 모두 확인 창을 거친다. 종류는 닫는 동안 문구가 바뀌지 않게 따로 둔다.
+  const [confirmAction, setConfirmAction] = useState<CloseChatAction>('finish')
+  const [confirmOpen, setConfirmOpen] = useState(false)
   // 음성은 입력창만 채운다. 학생이 확인·수정한 뒤 직접 보낸다.
   const voice = useVoiceInput({ onText: setDraft })
   // 실패한 글을 다시 보낼 때 같은 request_id를 써서 백엔드가 중복 발화로 세지 않게 한다.
@@ -79,11 +84,16 @@ function ChatbotChatPage() {
   }
 
   const { case: counselCase, messages } = data
-  const open = counselCase.status === 'in_progress'
+  const open = counselCase.chat_open
   // 예시 문장은 순서대로 보내야 세 번째에서 선생님께 전달되므로, 지금까지 보낸 학생 말 수로 다음 문장을 고른다.
   const studentTurns = messages.filter((m) => m.role === 'student').length
   const busy = sendMessage.isPending || handoff.isPending || finish.isPending
   const failure = [sendMessage, handoff, finish].find((m) => m.isError)?.error
+
+  const askToClose = (action: CloseChatAction) => {
+    setConfirmAction(action)
+    setConfirmOpen(true)
+  }
 
   const send = (text: string) => {
     const previous = lastRequest.current
@@ -119,13 +129,13 @@ function ChatbotChatPage() {
         actions={
           open ? (
             <>
-              <Button size="lg" onClick={() => handoff.mutate()} disabled={busy}>
+              <Button size="lg" onClick={() => askToClose('handoff')} disabled={busy}>
                 <UserRound /> 선생님과 상담하기
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                onClick={() => setFinishOpen(true)}
+                onClick={() => askToClose('finish')}
                 disabled={busy}
               >
                 상담 끝내기
@@ -204,10 +214,11 @@ function ChatbotChatPage() {
         </section>
       </PageBody>
 
-      <FinishConfirmDialog
-        open={finishOpen}
-        onOpenChange={setFinishOpen}
-        onConfirm={() => finish.mutate()}
+      <CloseChatConfirmDialog
+        action={confirmAction}
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        onConfirm={() => (confirmAction === 'handoff' ? handoff : finish).mutate()}
       />
     </>
   )

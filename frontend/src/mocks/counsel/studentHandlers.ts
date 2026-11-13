@@ -15,8 +15,8 @@ import { DEMO_STUDENT } from '@/lib/counsel/identity.ts'
 import { apiUrl, errorJson } from '@/mocks/http.ts'
 import { greeting, reply } from './bot.ts'
 import { type Db, findCase, loadDb, newId, nowIso, type StoredCase, updateDb } from './db.ts'
-import { keywordTriggered, pendingJudgment, scan } from './judgment.ts'
-import { closeCase } from './outcome.ts'
+import { keywordTriggered, scan } from './judgment.ts'
+import { closeChat, judgeAfterMessage } from './outcome.ts'
 
 /** 학생 상담 API 목(`/api/student/counsel/...`). 제안서 6.1~6.5 */
 
@@ -57,12 +57,15 @@ const respond = <T>(outcome: Outcome<T>) =>
     ? HttpResponse.json(outcome.body as Record<string, unknown>)
     : errorJson(outcome.status, outcome.detail)
 
-/** 진행 중인 내 상담 건에만 fn을 적용한다. 없으면 404, 진행 중이 아니면 409. */
+/**
+ * 챗봇 대화가 열린 내 상담 건에만 fn을 적용한다. 없으면 404, 학생이 대화를 닫았으면 409.
+ * 키워드로 교사에게 알림이 간 건(승인대기)도 학생이 닫기 전까지는 열려 있다.
+ */
 function withOpenCase<T>(id: string, fn: (stored: StoredCase) => T): Outcome<T> {
   return updateDb((db) => {
     const stored = findMine(db, id)
     if (!stored) return { status: 404, detail: NOT_FOUND_DETAIL }
-    if (stored.case.status !== 'in_progress') return { status: 409, detail: CLOSED_DETAIL }
+    if (!stored.case.chat_open) return { status: 409, detail: CLOSED_DETAIL }
     return { body: fn(stored) }
   })
 }
@@ -96,6 +99,7 @@ export const studentHandlers = [
           handoff: null,
           detected_keywords: [],
           read: false,
+          chat_open: true,
           created_at: at,
           updated_at: at,
         },
@@ -136,7 +140,7 @@ export const studentHandlers = [
     },
   ),
 
-  // 6.3 발화 보내기: 판단은 챗봇 답보다 먼저. 전환되는 발화에는 챗봇 답이 없다.
+  // 6.3 발화 보내기: 판단은 챗봇 답보다 먼저. 키워드로 전환돼도 챗봇은 계속 답한다.
   http.post(apiUrl('/api/student/counsel/cases/:id/messages'), async ({ params, request }) => {
     const body = (await readJson(request)) as Partial<SendMessageRequest> | null
     const text = typeof body?.text === 'string' ? body.text.trim() : ''
@@ -155,31 +159,20 @@ export const studentHandlers = [
         const studentMessage = message('student', text)
         stored.messages.push(studentMessage)
 
-        const s = scan(stored.messages)
-        let response: SendMessageResponse
-        if (keywordTriggered(s)) {
-          const judgment = closeCase(stored, 'keyword')
-          response = {
-            student_message: studentMessage,
-            bot_message: null,
-            judgment,
-            case: stored.case,
-          }
-        } else {
-          const turns = stored.messages.filter((m) => m.role === 'student').length
-          const botMessage = message(
-            'bot',
-            reply(stored.form ?? { topic: '기타', answers: [] }, text, turns),
-          )
-          stored.messages.push(botMessage)
-          stored.case.detected_keywords = s.detected
-          stored.case.updated_at = botMessage.at
-          response = {
-            student_message: studentMessage,
-            bot_message: botMessage,
-            judgment: pendingJudgment(s),
-            case: stored.case,
-          }
+        // 키워드 조건이 차면 교사에게 알림만 보낸다. 챗봇 대화는 멈추지 않고 이어서 답한다.
+        const judgment = judgeAfterMessage(stored, keywordTriggered(scan(stored.messages)))
+        const turns = stored.messages.filter((m) => m.role === 'student').length
+        const botMessage = message(
+          'bot',
+          reply(stored.form ?? { topic: '기타', answers: [] }, text, turns),
+        )
+        stored.messages.push(botMessage)
+        stored.case.updated_at = botMessage.at
+        const response: SendMessageResponse = {
+          student_message: studentMessage,
+          bot_message: botMessage,
+          judgment,
+          case: stored.case,
         }
         if (requestId) stored.replies = { ...stored.replies, [requestId]: response }
         return response
@@ -187,25 +180,28 @@ export const studentHandlers = [
     )
   }),
 
-  // 6.4 「선생님과 상담하기」: 학생 요청 전환
+  // 6.4 「선생님과 상담하기」: 학생 요청 전환. 챗봇 대화를 닫는다.
   http.post(apiUrl('/api/student/counsel/cases/:id/handoff'), ({ params }) =>
     respond(
       withOpenCase(
         String(params.id),
         (stored): JudgmentResponse => ({
-          judgment: closeCase(stored, 'student_request'),
+          judgment: closeChat(stored, 'handoff'),
           case: stored.case,
         }),
       ),
     ),
   ),
 
-  // 6.5 전환 없이 끝내기(학생의 「상담 끝내기」 버튼)
+  // 6.5 「상담 끝내기」: 챗봇 대화를 닫는다. 키워드로 이미 알렸으면 승인대기를 그대로 둔다.
   http.post(apiUrl('/api/student/counsel/cases/:id/finish'), ({ params }) =>
     respond(
       withOpenCase(
         String(params.id),
-        (stored): JudgmentResponse => ({ judgment: closeCase(stored, null), case: stored.case }),
+        (stored): JudgmentResponse => ({
+          judgment: closeChat(stored, 'finish'),
+          case: stored.case,
+        }),
       ),
     ),
   ),

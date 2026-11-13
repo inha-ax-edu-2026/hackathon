@@ -18,6 +18,6 @@ export const HANDOFF_REASON_LABEL: Record<HandoffReason, string> = {
   student_request: '학생 요청',
 }
 
-/** 학생에게 보이는 고지. 상담 방식 선택 창과 종료 확인 창 두 곳에만 쓴다. */
+/** 학생에게 보이는 고지. 상담 방식 선택 창과 대화 닫기 확인 창(선생님과 상담하기·상담 끝내기)에만 쓴다. */
 export const TEACHER_VISIBILITY_NOTICE =
   '선생님은 요약·위험도·상담 양식을 보고, 대화 내용 전체는 보지 않아요'

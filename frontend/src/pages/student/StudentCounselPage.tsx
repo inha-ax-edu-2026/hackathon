@@ -64,7 +64,8 @@ function StudentCounselPage() {
                     className={openable ? 'cursor-pointer border-b hover:bg-accent/60' : 'border-b'}
                   >
                     <td className="px-6 py-4">
-                      <StatusBadge status={c.status} />
+                      {/* 키워드 알림으로 승인대기가 돼도 학생이 대화 중이면 「상담중」으로 보인다. */}
+                      <StatusBadge status={c.chat_open ? 'in_progress' : c.status} />
                     </td>
                     <td className="px-6 py-4">{methodLabel(c)}</td>
                     <td className="px-6 py-4">{dateLabel(c)}</td>

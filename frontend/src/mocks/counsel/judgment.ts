@@ -1,4 +1,4 @@
-import type { Judgment, Message, Risk } from '@/api/counselTypes.ts'
+import type { Message, Risk } from '@/api/counselTypes.ts'
 
 /**
  * 판단 규칙(명세 「판단 규칙」, 제안서 4절). 전환·위험도는 키워드 규칙만으로 정한다. AI는 관여하지 않는다.
@@ -42,17 +42,9 @@ export type Scan = ReturnType<typeof scan>
 export const keywordTriggered = (s: Scan) =>
   s.severeCount > 0 || s.mildUtterances >= KEYWORDS.mildThreshold
 
-/** 위험도는 전환·종료 시점에 한 번 정한다. 높음 = 심각 1개 이상, 보통 = 경미 발화 1번 이상 또는 학생 요청 전환. */
+/** 위험도는 전환 시점에 정하고, 전환 뒤 대화가 이어지면 발화마다 다시 정한다. 높음 = 심각 1개 이상, 보통 = 경미 발화 1번 이상 또는 학생 요청 전환. */
 export function decideRisk(s: Scan, studentRequested: boolean): Risk {
   if (s.severeCount > 0) return 'high'
   if (s.mildUtterances > 0 || studentRequested) return 'medium'
   return 'low'
 }
-
-/** 진행 중(전환·종료 전)의 판단 결과 */
-export const pendingJudgment = (s: Scan): Judgment => ({
-  handed_off: false,
-  handoff_reason: null,
-  detected_keywords: s.detected,
-  risk: null,
-})

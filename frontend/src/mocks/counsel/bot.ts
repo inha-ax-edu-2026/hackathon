@@ -89,6 +89,8 @@ type SummarySource = {
   /** null이면 전환 없이 끝낸 상담 */
   reason: HandoffReason | null
   risk: Risk
+  /** 학생이 아직 챗봇과 대화 중인지(키워드 알림 뒤에도 대화는 이어진다) */
+  chatOpen: boolean
 }
 
 const keywordList = (keywords: string[]) => keywords.map((k) => `'${k}'`).join(', ')
@@ -119,7 +121,7 @@ function keywordSentence(keywords: string[], studentTurns: number) {
 }
 
 const REASON_SENTENCE: Record<HandoffReason, string> = {
-  keyword: '키워드 기준에 따라 개인상담으로 바로 전환되었다.',
+  keyword: '키워드 기준에 따라 선생님께 알림이 전달되었다.',
   student_request: '학생이 「선생님과 상담하기」를 눌러 선생님과의 상담을 직접 요청했다.',
 }
 
@@ -127,13 +129,14 @@ const REASON_SENTENCE: Record<HandoffReason, string> = {
  * 전환 요약. 학생 발화를 그대로 옮기지 않고 주제·양식 답·감지 키워드·전환 사유·위험도로 풀어 쓴다.
  * 학생이 말하지 않은 사실은 만들지 않는다.
  */
-function aiSummary({ form, messages, keywords, reason, risk }: SummarySource) {
+function aiSummary({ form, messages, keywords, reason, risk, chatOpen }: SummarySource) {
   const studentTurns = messages.filter((m) => m.role === 'student').length
   return [
     `학생은 ${form.topic} 고민으로 AI 챗봇 상담을 시작했다.`,
     formSentence(form),
     keywordSentence(keywords, studentTurns),
     reason ? REASON_SENTENCE[reason] : '학생이 전환 없이 상담을 끝냈다.',
+    chatOpen && '학생은 지금도 AI 챗봇과 대화를 이어가고 있다.',
     `위험도는 ${RISK_LABEL[risk]}으로 판단했다.`,
   ]
     .filter(Boolean)

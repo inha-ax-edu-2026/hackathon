@@ -49,6 +49,7 @@ function individual(input: SeedInput): StoredCase {
       handoff: null,
       detected_keywords: [],
       read: true,
+      chat_open: false,
       updated_at: input.created_at,
     },
     form: null,

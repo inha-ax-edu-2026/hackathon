@@ -57,6 +57,11 @@ export type CounselCase = {
   detected_keywords: string[]
   /** 교사가 상세를 열었는지. */
   read: boolean
+  /**
+   * 학생이 AI 챗봇과 계속 대화할 수 있는지. 학생이 「선생님과 상담하기」·「상담 끝내기」를 눌러야만 false가 된다.
+   * 키워드 감지로 교사에게 알림이 가도(승인대기) true로 남는다. 개인상담 시드는 false.
+   */
+  chat_open: boolean
   created_at: string
   updated_at: string
 }
@@ -115,7 +120,7 @@ export type StudentCaseDetailResponse = {
 export type SendMessageRequest = { text: string; request_id: string }
 export type SendMessageResponse = {
   student_message: Message
-  /** 이 발화로 전환되면 null. */
+  /** 챗봇 답. 키워드로 교사에게 알림이 가도 대화는 이어지므로 늘 있다. */
   bot_message: Message | null
   judgment: Judgment
   case: CounselCase

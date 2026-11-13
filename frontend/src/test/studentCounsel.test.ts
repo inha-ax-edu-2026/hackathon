@@ -73,6 +73,7 @@ describe('상담 건 만들기', () => {
     expect(created.case.title).toBe('[AI 챗봇] 교우관계 상담')
     expect(created.case.risk).toBeNull()
     expect(created.case.handoff).toBeNull()
+    expect(created.case.chat_open).toBe(true)
     expect(created.messages).toHaveLength(1)
     expect(created.messages[0].role).toBe('bot')
     expect(created.messages[0].text.length).toBeGreaterThan(0)
@@ -155,12 +156,13 @@ describe('발화 보내기와 판단 규칙', () => {
     expect(sent.case.status).toBe('in_progress')
   })
 
-  it('심각 키워드 1번이면 즉시 전환되고 위험도 높음, 챗봇 답은 없다', async () => {
+  it('심각 키워드 1번이면 즉시 교사에게 알리고 위험도 높음, 챗봇 대화는 이어진다', async () => {
     const { case: created } = await createCase()
 
     const sent = await say(created.id, '그냥 다 그만두고 죽고 싶어')
 
-    expect(sent.bot_message).toBeNull()
+    expect(sent.bot_message?.role).toBe('bot')
+    expect(sent.case.chat_open).toBe(true)
     expect(sent.judgment).toEqual({
       handed_off: true,
       handoff_reason: 'keyword',
@@ -196,7 +198,7 @@ describe('발화 보내기와 판단 규칙', () => {
 
     const third = await say(created.id, '시험이 불안해')
 
-    expect(third.bot_message).toBeNull()
+    expect(third.bot_message?.role).toBe('bot')
     expect(third.judgment).toEqual({
       handed_off: true,
       handoff_reason: 'keyword',
@@ -291,6 +293,45 @@ describe('발화 보내기와 판단 규칙', () => {
   })
 })
 
+describe('키워드 알림 뒤에도 이어지는 대화', () => {
+  it('알림 뒤에도 발화를 보내면 챗봇이 답하고, 새 키워드로 위험도가 올라간다', async () => {
+    const { case: created } = await createCase()
+    for (const line of DEMO_LINES) await say(created.id, line)
+
+    const after = await say(created.id, '사실 어제 맞았어')
+
+    expect(after.bot_message?.role).toBe('bot')
+    expect(after.case.status).toBe('awaiting_approval')
+    expect(after.case.chat_open).toBe(true)
+    expect(after.judgment.handoff_reason).toBe('keyword')
+    expect(after.judgment.risk).toBe('high')
+    expect(after.judgment.detected_keywords).toContain('맞았')
+  })
+
+  it('알림 뒤 「상담 끝내기」를 누르면 대화만 닫히고 승인대기는 그대로다', async () => {
+    const { case: created } = await createCase()
+    await say(created.id, '어제 형한테 맞았어')
+
+    const res = await finish(created.id)
+
+    expect(res.case.chat_open).toBe(false)
+    expect(res.case.status).toBe('awaiting_approval')
+    expect(res.judgment.handoff_reason).toBe('keyword')
+    expect(await statusOf(say(created.id, '안녕'))).toBe(409)
+  })
+
+  it('알림 뒤 「선생님과 상담하기」를 누르면 대화가 닫히고 전환 사유는 키워드로 남는다', async () => {
+    const { case: created } = await createCase()
+    await say(created.id, '어제 형한테 맞았어')
+
+    const res = await handoff(created.id)
+
+    expect(res.case.chat_open).toBe(false)
+    expect(res.case.status).toBe('awaiting_approval')
+    expect(res.case.handoff?.reason).toBe('keyword')
+  })
+})
+
 describe('「선생님과 상담하기」', () => {
   it('키워드가 없어도 학생 요청으로 전환되고 위험도는 보통', async () => {
     const { case: created } = await createCase()
@@ -305,6 +346,7 @@ describe('「선생님과 상담하기」', () => {
     })
     expect(res.case.status).toBe('awaiting_approval')
     expect(res.case.handoff?.reason).toBe('student_request')
+    expect(res.case.chat_open).toBe(false)
   })
 })
 
@@ -365,13 +407,14 @@ describe('끝난 상담 건', () => {
   it('끝난 건도 다시 열면 대화를 읽을 수 있다', async () => {
     const { case: created } = await createCase()
     await say(created.id, '학교폭력 같은 일이 있었어')
+    await finish(created.id)
 
     const detail = await apiFetch<StudentCaseDetailResponse>(
       `/api/student/counsel/cases/${created.id}`,
     )
 
     expect(detail.case.status).toBe('awaiting_approval')
-    expect(detail.messages.map((m) => m.role)).toEqual(['bot', 'student'])
+    expect(detail.messages.map((m) => m.role)).toEqual(['bot', 'student', 'bot'])
   })
 })
 
@@ -391,6 +434,7 @@ describe('시연 문장', () => {
     expect(second.bot_message).not.toBeNull()
     expect(third.judgment.handed_off).toBe(true)
     expect(third.judgment.handoff_reason).toBe('keyword')
-    expect(third.bot_message).toBeNull()
+    expect(third.bot_message).not.toBeNull()
+    expect(third.case.chat_open).toBe(true)
   })
 })

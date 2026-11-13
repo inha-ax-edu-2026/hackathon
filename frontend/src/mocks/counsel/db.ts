@@ -29,7 +29,7 @@ export type StoredCase = {
 
 export type Db = { cases: StoredCase[] }
 
-const STORAGE_KEY = 'ax-counsel-demo/db/v1'
+const STORAGE_KEY = 'ax-counsel-demo/db/v2'
 
 export function loadDb(): Db {
   const raw = localStorage.getItem(STORAGE_KEY)
