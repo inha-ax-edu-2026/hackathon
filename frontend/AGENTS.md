@@ -42,6 +42,7 @@ src/
 ## 컨벤션
 
 - 컴포넌트는 함수형 + named props 타입. 파일명은 PascalCase(`AttendanceList.tsx`).
+- `src/` 아래 모듈은 상대 경로 대신 `@/` 별칭으로 import한다(예: `@/lib/api`). 같은 폴더 안의 파일만 `./`를 쓴다.
 - 환경변수는 `VITE_` 접두사만 브라우저에 노출된다. 키 이름은 `.env.example`에 추가하고 실제 값은 `.env`에 둔다.
 - API 호출은 컴포넌트에서 `fetch`를 직접 쓰지 않고 `useQuery`·`useMutation` + `apiFetch`로 한다.
   기능별 쿼리 훅은 `src/api/{도메인}.ts`에 모으고, query key는 `['도메인', ...파라미터]` 배열로 쓴다.
