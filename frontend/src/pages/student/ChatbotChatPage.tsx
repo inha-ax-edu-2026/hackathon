@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button.tsx'
 import { useVoiceInput } from '@/hooks/useVoiceInput.ts'
 import { ApiError } from '@/lib/api.ts'
 import { DEMO_LINES } from '@/lib/counsel/demoLines.ts'
-import { STUDENT_COUNSEL_PATH, STUDENT_SCHOOL_VIOLENCE_PATH } from '@/lib/counsel/paths.ts'
+import { STUDENT_SCHOOL_VIOLENCE_PATH } from '@/lib/counsel/paths.ts'
 import { VOICE_ERROR_MESSAGES } from '@/lib/counsel/voice.ts'
 import { cn } from '@/lib/utils.ts'
 
@@ -31,12 +31,12 @@ function errorDetail(error: unknown) {
 }
 
 /**
- * AI 챗봇 상담(`/student/counsel/chatbot/:id`).
+ * 학교폭력 AI 챗봇 상담.
  * 대화가 열려 있으면(chat_open) 대화하고, 학생이 버튼으로 닫았으면 읽기 전용으로 보이고 아래에 안내 카드를 둔다.
  * 키워드 감지로 교사에게 알림이 가도 대화는 이어진다. 알림이 간 자리에 안내 블록을 끼우고 머리말 설명을 바꿔 학생도 알게 한다.
  * 감지 키워드·위험도는 학생에게 보이지 않는다(위험도 높음일 때 위기 연락처만 덧붙는다).
  */
-function ChatbotChatPage({ schoolViolence = false }: { schoolViolence?: boolean }) {
+function ChatbotChatPage() {
   const { id = '' } = useParams()
   const { data, isPending, error } = useStudentCase(id)
   const sendMessage = useSendMessage(id)
@@ -56,10 +56,10 @@ function ChatbotChatPage({ schoolViolence = false }: { schoolViolence?: boolean 
   const pendingText = sendMessage.isPending ? sendMessage.variables.text : null
   const backLink = (
     <Link
-      to={schoolViolence ? STUDENT_SCHOOL_VIOLENCE_PATH : STUDENT_COUNSEL_PATH}
+      to={STUDENT_SCHOOL_VIOLENCE_PATH}
       className="inline-flex items-center gap-0.5 hover:underline"
     >
-      <ChevronLeft className="size-4" /> {schoolViolence ? '학폭 상담' : '내 상담'}으로
+      <ChevronLeft className="size-4" /> 학폭 상담으로
     </Link>
   )
 

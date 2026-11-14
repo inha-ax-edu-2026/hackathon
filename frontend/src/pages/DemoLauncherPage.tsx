@@ -72,7 +72,7 @@ function DemoLauncherPage() {
         <div className="space-y-1">
           <p className="font-semibold">시연 초기화</p>
           <p className="text-muted-foreground">
-            모든 상담 건을 지우고 기존 개인상담 건만 남겨요. 열린 탭은 잠시 뒤 따라와요.
+            상담과 사안 데이터를 시연 시작 상태로 되돌려요. 열린 탭에도 잠시 뒤 반영돼요.
           </p>
           <p role="status" className="min-h-5 text-success">
             {reset.isSuccess && '초기화했어요.'}

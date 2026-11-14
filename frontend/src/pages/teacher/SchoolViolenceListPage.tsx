@@ -81,7 +81,7 @@ function SchoolViolenceListPage() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="counsel">
-            <TeacherCounselList schoolViolence />
+            <TeacherCounselList />
           </TabsContent>
           <TabsContent value="cases">
             <SchoolViolenceCases />

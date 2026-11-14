@@ -17,11 +17,7 @@ import {
   START_TIME,
   toggleChoice,
 } from '@/lib/counsel/form.ts'
-import {
-  chatbotPath,
-  STUDENT_COUNSEL_PATH,
-  STUDENT_SCHOOL_VIOLENCE_PATH,
-} from '@/lib/counsel/paths.ts'
+import { chatbotPath, STUDENT_SCHOOL_VIOLENCE_PATH } from '@/lib/counsel/paths.ts'
 import { cn } from '@/lib/utils.ts'
 
 const fieldClass = 'min-w-0 rounded-xl border border-border bg-muted/25 px-4 py-3'
@@ -35,8 +31,8 @@ function errorMessage(error: unknown) {
   return detail ?? '상담을 시작하지 못했어요. 잠시 뒤 다시 시도해 주세요.'
 }
 
-/** AI 챗봇 상담의 상담 양식 작성(`/student/counsel/chatbot/new`). 제출하면 챗봇 화면으로 간다. */
-function ChatbotFormPage({ schoolViolence = false }: { schoolViolence?: boolean }) {
+/** AI 챗봇 상담의 상담 양식 작성. 제출하면 챗봇 화면으로 간다. */
+function ChatbotFormPage() {
   const [selections, setSelections] = useState<Selections>({})
   const [detail, setDetail] = useState('')
   const [step, setStep] = useState(0)
@@ -44,7 +40,6 @@ function ChatbotFormPage({ schoolViolence = false }: { schoolViolence?: boolean 
   const id = useId()
   const navigate = useNavigate()
   const createCase = useCreateCase()
-  const listPath = schoolViolence ? STUDENT_SCHOOL_VIOLENCE_PATH : STUDENT_COUNSEL_PATH
   const hasIncident = Boolean(selections[INCIDENT.question]?.length) || detail.trim() !== ''
 
   const goToStep = (nextStep: number) => {
@@ -92,15 +87,14 @@ function ChatbotFormPage({ schoolViolence = false }: { schoolViolence?: boolean 
 
   const submit = () =>
     createCase.mutate(buildCounselForm(selections, detail), {
-      onSuccess: ({ case: created }) =>
-        navigate(chatbotPath(created.id, listPath), { replace: true }),
+      onSuccess: ({ case: created }) => navigate(chatbotPath(created.id), { replace: true }),
     })
 
   return (
     <>
       <PageHeader
         title="AI 챗봇 상담 신청"
-        back={<Link to={listPath}>‹ {schoolViolence ? '학폭 상담' : '내 상담'}으로 돌아가기</Link>}
+        back={<Link to={STUDENT_SCHOOL_VIOLENCE_PATH}>‹ 학폭 상담으로 돌아가기</Link>}
       />
       <PageBody className="px-4 sm:px-8">
         <form
@@ -190,7 +184,7 @@ function ChatbotFormPage({ schoolViolence = false }: { schoolViolence?: boolean 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t pt-4">
             {step === 0 ? (
               <Button asChild variant="outline">
-                <Link to={listPath}>취소</Link>
+                <Link to={STUDENT_SCHOOL_VIOLENCE_PATH}>취소</Link>
               </Button>
             ) : (
               <Button

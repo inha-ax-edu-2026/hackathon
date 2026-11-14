@@ -8,6 +8,8 @@ import type {
   UpdateDocumentRequest,
 } from '@/api/counselTypes.ts'
 import { ApiError, apiFetch } from '@/lib/api.ts'
+import { SCHOOL_VIOLENCE_TOPIC } from '@/lib/counsel/form.ts'
+import { splitTitle } from '@/lib/counsel/teacherView.ts'
 
 /**
  * 교사 상담 API 훅 (`/api/teacher/counsel/...`).
@@ -25,12 +27,22 @@ export const teacherCasesKey = ['teacherCounsel', 'cases'] as const
 /** 학생 탭의 전환을 교사 탭이 알아차리는 폴링 간격(ms). */
 export const TEACHER_CASES_POLL_MS = 1500
 
-/** 「개인상담 관리」 목록. 최신순이고 진행 중인 챗봇 상담 건은 서버가 뺀다. 약 1.5초마다 다시 부른다. */
+// 상담 목록에는 주제 필드가 없어 제목과 서버가 감지한 키워드로 관련 상담을 찾는다.
+const SCHOOL_VIOLENCE_CUES = /학교폭력|폭행|맞았|따돌|왕따|괴롭|폭력·위협/
+
+const selectSchoolViolenceCases = ({ cases }: CaseListResponse) =>
+  cases.filter(
+    (c) =>
+      splitTitle(c).text === `${SCHOOL_VIOLENCE_TOPIC} 상담` ||
+      c.detected_keywords.some((keyword) => SCHOOL_VIOLENCE_CUES.test(keyword)),
+  )
+
+/** 교사의 학폭 상담 목록과 알림에 쓰는 상담 건을 폴링한다. */
 export function useTeacherCases() {
   return useQuery({
     queryKey: teacherCasesKey,
     queryFn: ({ signal }) => apiFetch<CaseListResponse>(BASE, { signal }),
-    select: (data) => data.cases,
+    select: selectSchoolViolenceCases,
     refetchInterval: TEACHER_CASES_POLL_MS,
     // 학생 탭과 교사 탭을 나란히 띄운 시연에서 가려진 탭도 알림을 받아야 한다.
     refetchIntervalInBackground: true,

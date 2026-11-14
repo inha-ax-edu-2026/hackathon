@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.tsx'
 import { ApiError } from '@/lib/api.ts'
 import { HANDOFF_REASON_LABEL } from '@/lib/counsel/labels.ts'
-import { TEACHER_COUNSEL_PATH } from '@/lib/counsel/paths.ts'
+import { SCHOOL_VIOLENCE_PATH } from '@/lib/schoolViolence/paths.ts'
 import { cn } from '@/lib/utils.ts'
 
 /** 밑줄형 탭: 선택한 탭은 주색 글자와 밑줄. */
@@ -35,8 +35,8 @@ function isDetailTab(value: string | null): value is DetailTab {
   return TABS.includes(value as DetailTab)
 }
 
-/** 상담 건 상세(`/teacher/manage-apply/counsel/:id`). 대화 전문은 어디에도 보이지 않는다. */
-function CounselDetailPage({ listPath = TEACHER_COUNSEL_PATH }: { listPath?: string }) {
+/** 학폭 상담 상세. 대화 전문은 어디에도 보이지 않는다. */
+function CounselDetailPage() {
   const { id = '' } = useParams()
   const { data, isPending, error } = useTeacherCaseDetail(id)
   const markRead = useMarkCaseRead()
@@ -44,7 +44,7 @@ function CounselDetailPage({ listPath = TEACHER_COUNSEL_PATH }: { listPath?: str
   const [searchParams, setSearchParams] = useSearchParams()
   const tabParam = searchParams.get('tab')
   const backLink = (
-    <Link to={listPath} className="inline-flex items-center gap-1">
+    <Link to={SCHOOL_VIOLENCE_PATH} className="inline-flex items-center gap-1">
       <ChevronLeft className="size-4" />
       목록으로 돌아가기
     </Link>

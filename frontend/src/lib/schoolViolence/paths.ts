@@ -1,6 +1,6 @@
 /** 학교폭력 사안 화면 경로. 라우터 정의와 링크·이동이 같은 값을 쓴다. */
 
-/** 교사 셸의 사안 화면 접두. 상담 메뉴(`/teacher/manage-apply/counsel`)와 겹치지 않게 별도 접두를 쓴다. */
+/** 교사 학교폭력 관리 화면 경로. */
 export const SCHOOL_VIOLENCE_PATH = '/teacher/school-violence'
 
 /** 사안 관리 탭(상담 관리 탭은 기본으로 열린다). */

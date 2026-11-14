@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
 import type { CounselCase } from '@/api/counselTypes.ts'
 import { Button } from '@/components/ui/button.tsx'
-import { COUNSEL_REGISTER_PATH, STUDENT_COUNSEL_PATH } from '@/lib/counsel/paths.ts'
+import { STUDENT_SCHOOL_VIOLENCE_PATH } from '@/lib/counsel/paths.ts'
 
 /** 위기 연락처. 위험도가 높을 때만 전환 안내에 붙는다. */
 export function CrisisContacts() {
@@ -36,23 +36,11 @@ export function ChatClosedNotice({ counselCase }: { counselCase: CounselCase }) 
           {counselCase.risk === 'high' && <CrisisContacts />}
         </>
       ) : (
-        <>
-          <p className="font-medium">상담이 끝났어요. 이야기해 줘서 고마워요.</p>
-          <p className="text-sm text-muted-foreground">
-            선생님과 직접 이야기하고 싶다면 개인상담을 신청해 보세요.
-          </p>
-        </>
+        <p className="font-medium">상담이 끝났어요. 이야기해 줘서 고마워요.</p>
       )}
-      <div className="flex flex-wrap gap-2">
-        <Button asChild>
-          <Link to={STUDENT_COUNSEL_PATH}>내 상담으로</Link>
-        </Button>
-        {!handedOff && (
-          <Button asChild variant="outline">
-            <Link to={COUNSEL_REGISTER_PATH}>개인상담 신청하기</Link>
-          </Button>
-        )}
-      </div>
+      <Button asChild>
+        <Link to={STUDENT_SCHOOL_VIOLENCE_PATH}>학폭 상담으로</Link>
+      </Button>
     </section>
   )
 }

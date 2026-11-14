@@ -5,8 +5,8 @@ import type { CounselCase } from '@/api/counselTypes.ts'
 import { HandoffToast } from '@/components/counsel/HandoffToast.tsx'
 import { RISK_LABEL } from '@/lib/counsel/labels.ts'
 import { takeNewHandoffs } from '@/lib/counsel/notifications.ts'
-import { counselDetailPath } from '@/lib/counsel/paths.ts'
 import { maskName } from '@/lib/counsel/teacherView.ts'
+import { schoolViolenceCounselDetailPath } from '@/lib/schoolViolence/paths.ts'
 
 /**
  * 폴링으로 받은 목록에 새 전환 건이 생기면 토스트를 한 번 띄운다.
@@ -29,7 +29,7 @@ export function useHandoffToasts(cases: CounselCase[] | undefined) {
             message={message}
             onOpen={() => {
               toast.dismiss(toastId)
-              navigate(counselDetailPath(c.id))
+              navigate(schoolViolenceCounselDetailPath(c.id))
             }}
           />
         ),

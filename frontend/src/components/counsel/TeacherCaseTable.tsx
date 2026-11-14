@@ -10,8 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table.tsx'
-import { counselDetailPath } from '@/lib/counsel/paths.ts'
 import { maskedStudentLabel, scheduleLabel, splitTitle } from '@/lib/counsel/teacherView.ts'
+import { schoolViolenceCounselDetailPath } from '@/lib/schoolViolence/paths.ts'
 import { cn } from '@/lib/utils.ts'
 
 /**
@@ -26,15 +26,14 @@ const CHIP_CLASS = {
 const COLUMNS = ['상담상태', '상담유형', '상담제목', '위험도', '상담예약일시', '상담 대상자']
 
 /**
- * 「개인상담 관리」 표. 기존 4열에서 상담유형·위험도를 따로 떼어 제목 칸에 몰리지 않게 했다.
+ * 학폭 상담 목록.
  * 행을 누르면 상세로 간다.
  */
 type TeacherCaseTableProps = {
   cases: CounselCase[]
-  detailPath?: (id: string) => string
 }
 
-export function TeacherCaseTable({ cases, detailPath = counselDetailPath }: TeacherCaseTableProps) {
+export function TeacherCaseTable({ cases }: TeacherCaseTableProps) {
   const navigate = useNavigate()
 
   return (
@@ -59,7 +58,7 @@ export function TeacherCaseTable({ cases, detailPath = counselDetailPath }: Teac
           {cases.map((c) => {
             const { chip, text } = splitTitle(c)
             const isNew = c.handoff !== null && !c.read
-            const open = () => navigate(detailPath(c.id))
+            const open = () => navigate(schoolViolenceCounselDetailPath(c.id))
             return (
               <TableRow
                 key={c.id}
