@@ -9,6 +9,8 @@ import type {
   UpdateDocumentRequest,
 } from '@/api/counselTypes.ts'
 import { apiUrl, errorJson } from '@/mocks/http.ts'
+import { recommendSchoolViolence } from '@/mocks/schoolViolence/recommendation.ts'
+import { findCaseByCounsel } from '@/mocks/schoolViolence/store.ts'
 import { findCase, loadDb, nowIso, type StoredCase, updateDb } from './db.ts'
 import { DOCUMENT_KINDS, toCaseDocuments } from './documents.ts'
 
@@ -73,13 +75,16 @@ export const teacherHandlers = [
   http.get<PathParams, DefaultBodyType, TeacherCaseDetailResponse | ApiErrorBody>(
     apiUrl('/api/teacher/counsel/cases/:id'),
     ({ params }) => {
-      const stored = findVisible(findCase(loadDb(), String(params.id)))
+      const db = loadDb()
+      const stored = findVisible(findCase(db, String(params.id)))
       if (!stored) return errorJson(404, NOT_FOUND_DETAIL)
       return HttpResponse.json<TeacherCaseDetailResponse>({
         case: stored.case,
         summary: stored.summary,
         form: stored.form,
         documents: stored.documents ? toCaseDocuments(stored.documents) : null,
+        school_violence_case_id: findCaseByCounsel(db, stored.case.id)?.id ?? null,
+        school_violence_recommendation: recommendSchoolViolence(stored.case.detected_keywords),
       })
     },
   ),

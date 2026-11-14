@@ -135,7 +135,10 @@ describe('상담 건 만들기', () => {
     const teacher = await teacherCases()
     expect(student.cases.some((c) => c.id === created.id)).toBe(false)
     expect(teacher.cases.some((c) => c.id === created.id)).toBe(false)
-    expect(teacher.cases.every((c) => c.kind === 'individual')).toBe(true)
+    // 남는 챗봇 상담 건은 시드(학교폭력 사안 시나리오의 한지우)뿐이다.
+    expect(teacher.cases.filter((c) => c.kind === 'chatbot').map((c) => c.student.name)).toEqual([
+      '한지우',
+    ])
   })
 })
 

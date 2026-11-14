@@ -1,0 +1,51 @@
+/*
+ * 서류 인쇄 규칙. A4 세로, 여백은 쪽 가장자리 표시가 들어갈 만큼 둔다.
+ * 색 표시 제거·편집 도구 숨김은 각 컴포넌트의 print: 유틸리티가 맡는다.
+ *
+ * 쪽마다 반복되는 표시(가상 사례·초안)는 쪽 여백 상자(@top-right·@bottom-center)로 단다.
+ * 첫 쪽은 본문 맨 위의 PrintMarks가 같은 표시를 보여주므로 여백 상자는 둘째 쪽부터 쓴다.
+ * 여백 상자를 지원하지 않는 브라우저는 첫 쪽 표시만 남는다.
+ * 「초안」 여부는 PrintMarks가 `--print-draft-mark`에 따옴표 글자로 넣어 준다(승인되면 비운다).
+ */
+@page {
+  size: A4 portrait;
+  margin: 16mm 12mm 18mm;
+
+  @top-right {
+    content: var(--print-draft-mark, "");
+    font-size: 10pt;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: #000;
+  }
+
+  @bottom-center {
+    content: "가상 사례 · 시연을 위해 만든 가상의 사안이에요. 실제와 관련이 없어요.";
+    font-size: 8pt;
+    color: #444;
+  }
+}
+
+@page :first {
+  @top-right {
+    content: none;
+  }
+
+  @bottom-center {
+    content: none;
+  }
+}
+
+@media print {
+  html,
+  body {
+    background: #fff;
+  }
+
+  /* 개발 모드 도구(TanStack Query Devtools) 버튼이 인쇄물에 찍히지 않게 한다. */
+  .tsqd-parent-container,
+  [data-sonner-toaster] {
+    /* biome-ignore lint/complexity/noImportantStyles: 라이브러리가 인라인 스타일로 그리는 요소를 덮어야 한다 */
+    display: none !important;
+  }
+}

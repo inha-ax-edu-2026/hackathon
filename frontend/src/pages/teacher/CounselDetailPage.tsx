@@ -8,6 +8,7 @@ import { DocumentsSlot } from '@/components/counsel/detail/DocumentsSlot.tsx'
 import { FormCard } from '@/components/counsel/detail/FormCard.tsx'
 import { SummaryCard } from '@/components/counsel/detail/SummaryCard.tsx'
 import { SuperschoolCards } from '@/components/counsel/detail/SuperschoolCards.tsx'
+import { IntakeCard } from '@/components/schoolViolence/IntakeCard.tsx'
 import { PageBody, PageHeader } from '@/components/shell/PageHeader.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.tsx'
@@ -89,7 +90,14 @@ function CounselDetailPage() {
     )
   }
 
-  const { case: counsel, summary, form, documents } = data
+  const {
+    case: counsel,
+    summary,
+    form,
+    documents,
+    school_violence_case_id,
+    school_violence_recommendation,
+  } = data
   const handoff = counsel.handoff
 
   // 선택한 탭은 `?tab=`에 둔다. 새로고침·링크로 들어와도 같은 탭이 열린다. 서류가 없는 건은 서류 탭이 없다.
@@ -184,9 +192,13 @@ function CounselDetailPage() {
 
           {documents && (
             // 탭을 옮겨도 저장 안 한 초안과 진행 표시가 남도록 숨기기만 한다.
-            <TabsContent value="documents" forceMount className="data-[state=inactive]:hidden">
+            <TabsContent
+              value="documents"
+              forceMount
+              className="flex flex-col gap-[18px] data-[state=inactive]:hidden"
+            >
               {connection.mode === 'backend' && (
-                <section className="mb-[18px] flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-5">
+                <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-5">
                   <div>
                     <p className="font-semibold">학교폭력 서류 초안</p>
                     <p className="text-sm text-muted-foreground">
@@ -205,6 +217,11 @@ function CounselDetailPage() {
                   </Button>
                 </section>
               )}
+              <IntakeCard
+                counselCaseId={id}
+                schoolViolenceCaseId={school_violence_case_id}
+                recommendation={school_violence_recommendation}
+              />
               <DocumentsSlot caseId={id} documents={documents} />
             </TabsContent>
           )}

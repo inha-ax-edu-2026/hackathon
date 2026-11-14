@@ -1,5 +1,6 @@
 import type { CounselCase } from '@/api/counselTypes.ts'
 import { DEMO_STUDENT } from '@/lib/counsel/identity.ts'
+import { createVictimCounselCase } from '@/mocks/schoolViolence/seed.ts'
 import type { StoredCase } from './db.ts'
 
 /**
@@ -32,6 +33,8 @@ export function createSeedCases(): StoredCase[] {
       schedule: { at: '2026-10-28T16:30:00+09:00', method: '대면' },
       created_at: '2026-10-24T11:05:00+09:00',
     }),
+    // 학교폭력 사안 시나리오의 피해 관련 학생 AI 챗봇 상담 건(전환·승인된 상태)
+    createVictimCounselCase(),
   ]
 }
 

@@ -138,6 +138,16 @@ export type TeacherCaseDetailResponse = {
   form: CounselForm | null
   /** 사후 서류. 전환된 건에만 있고, 종료 건·개인상담 시드는 null. */
   documents: CaseDocuments | null
+  /** 이 상담 건에서 접수한 학교폭력 사안 ID. 접수하지 않았으면 null(사안 계약은 schoolViolenceTypes.ts). */
+  school_violence_case_id: string | null
+  /** 학폭 권고. 권고는 참고용이며 사안을 만들지 않는다(접수는 교사만). */
+  school_violence_recommendation: SchoolViolenceRecommendation
+}
+
+/** 감지 키워드 중 학교폭력 관련 키워드가 있으면 recommended=true, keywords는 그 근거(감지된 키워드 문자열 그대로). */
+export type SchoolViolenceRecommendation = {
+  recommended: boolean
+  keywords: string[]
 }
 
 // ── 사후 서류 (명세 「사후 서류」, 제안서 7절) ──

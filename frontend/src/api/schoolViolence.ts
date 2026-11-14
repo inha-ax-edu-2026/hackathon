@@ -1,0 +1,189 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type {
+  ApproveDocumentRequest,
+  GenerateDocumentDraftRequest,
+  IntakeSchoolViolenceCaseRequest,
+  SaveDocumentFieldEdit,
+  SaveDocumentRequest,
+  SchoolViolenceCaseListResponse,
+  SchoolViolenceCaseResponse,
+  SchoolViolenceDocumentResponse,
+  UpdateSchoolViolenceInfoRequest,
+} from '@/api/schoolViolenceTypes.ts'
+import { ApiError, apiFetch } from '@/lib/api.ts'
+
+/**
+ * 교사 학교폭력 사안 API 훅 (`/api/teacher/school-violence/...`, 제안 계약).
+ * query key 규칙: 사안 쿼리는 모두 `['schoolViolence', ...]`로 시작한다.
+ * 쓰기 훅은 `['schoolViolence']` 접두어를 통째로 무효화하므로 목록·상세가 함께 갱신된다.
+ */
+
+const BASE = '/api/teacher/school-violence/cases'
+
+/** 사안 목록 query key */
+export const schoolViolenceCasesKey = ['schoolViolence', 'cases'] as const
+
+/** 사안 목록. 최근에 접수한 사안이 먼저 온다. */
+export function useSchoolViolenceCases() {
+  return useQuery({
+    queryKey: schoolViolenceCasesKey,
+    queryFn: () => apiFetch<SchoolViolenceCaseListResponse>(BASE),
+    select: (data) => data.cases,
+    // 시연 초기화·다른 탭의 접수가 목록에 바로 보이게 한다.
+    staleTime: 0,
+  })
+}
+
+export const schoolViolenceCaseKey = (id: string) => ['schoolViolence', 'case', id] as const
+
+/** 사안 상세: 사안 정보·사안 자료(원문 포함)·서류 9종 요약. */
+export function useSchoolViolenceCase(id: string) {
+  return useQuery({
+    queryKey: schoolViolenceCaseKey(id),
+    queryFn: () => apiFetch<SchoolViolenceCaseResponse>(`${BASE}/${id}`),
+    select: (data) => data.case,
+    // 없는 사안(404)은 다시 시도해도 같다.
+    retry: (count, error) => !(error instanceof ApiError && error.status === 404) && count < 1,
+  })
+}
+
+/**
+ * 「학폭 사안으로 접수」: 상담 건에서 사안을 만든다. 이미 접수한 상담 건이면 409.
+ * 상담 상세의 연결 사안 ID가 바뀌므로 상담 쿼리도 함께 무효화한다.
+ */
+export function useIntakeSchoolViolenceCase() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (counselCaseId: string) =>
+      apiFetch<SchoolViolenceCaseResponse>(BASE, {
+        method: 'POST',
+        body: { counsel_case_id: counselCaseId } satisfies IntakeSchoolViolenceCaseRequest,
+      }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(schoolViolenceCaseKey(data.case.id), data)
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['schoolViolence', 'cases'] }),
+        queryClient.invalidateQueries({ queryKey: ['teacherCounsel'] }),
+      ])
+    },
+  })
+}
+
+export const schoolViolenceDocumentKey = (caseId: string, formId: string) =>
+  ['schoolViolence', 'case', caseId, 'document', formId] as const
+
+/** 서류 상세: 칸 목록·근거 인용·검토 상태. 초안이 없으면 칸이 비어 있다. */
+export function useSchoolViolenceDocument(caseId: string, formId: string) {
+  return useQuery({
+    queryKey: schoolViolenceDocumentKey(caseId, formId),
+    queryFn: () =>
+      apiFetch<SchoolViolenceDocumentResponse>(`${BASE}/${caseId}/documents/${formId}`),
+    select: (data) => data.document,
+    retry: (count, error) => !(error instanceof ApiError && error.status === 404) && count < 1,
+  })
+}
+
+/**
+ * 「AI 초안 만들기」. 응답의 서류가 상세 캐시를 바로 채우고, 사안 목록·상세(서류 상태·진행률)는 다시 불러온다.
+ * 이미 초안이 있는 서류를 다시 만들 때는 `overwrite_confirmed: true`가 있어야 한다(티켓 04).
+ */
+export function useGenerateDocumentDraft(caseId: string, formId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (request: GenerateDocumentDraftRequest = {}) =>
+      apiFetch<SchoolViolenceDocumentResponse>(`${BASE}/${caseId}/documents/${formId}/draft`, {
+        method: 'POST',
+        body: request,
+      }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(schoolViolenceDocumentKey(caseId, formId), data)
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: schoolViolenceCaseKey(caseId), exact: true }),
+        queryClient.invalidateQueries({ queryKey: schoolViolenceCasesKey }),
+      ])
+    },
+  })
+}
+
+/**
+ * 서류 저장(칸 수정·검토 표시). 개정 번호는 실행하는 순간 캐시의 최신 서류에서 읽는다 — 연달아 누른 저장이
+ * 같은 번호를 보내 서로 409가 되지 않도록 뮤테이션을 한 줄로 세운다. 다른 창에서 먼저 고쳤다면 409다.
+ * 응답이 서류 캐시를 채우고, 사안의 서류 요약·집계(체크리스트)는 다시 불러온다.
+ */
+export function useSaveDocument(caseId: string, formId: string) {
+  const queryClient = useQueryClient()
+  const documentKey = schoolViolenceDocumentKey(caseId, formId)
+  return useMutation({
+    scope: { id: documentKey.join(':') },
+    mutationFn: (fields: SaveDocumentFieldEdit[]) => {
+      const cached = queryClient.getQueryData<SchoolViolenceDocumentResponse>(documentKey)
+      return apiFetch<SchoolViolenceDocumentResponse>(
+        `${BASE}/${caseId}/documents/${formId}/save`,
+        {
+          method: 'POST',
+          body: { revision: cached?.document.revision ?? 0, fields } satisfies SaveDocumentRequest,
+        },
+      )
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(documentKey, data)
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: schoolViolenceCaseKey(caseId), exact: true }),
+        queryClient.invalidateQueries({ queryKey: schoolViolenceCasesKey }),
+      ])
+    },
+    // 오래된 개정이면(409) 최신 서류를 다시 받아 화면이 따라가게 한다.
+    onError: (error) => {
+      if (error instanceof ApiError && error.status === 409) {
+        return queryClient.invalidateQueries({ queryKey: documentKey })
+      }
+    },
+  })
+}
+
+/** 서류 승인. 사안의 단계·진행률·체크리스트가 바뀌므로 `['schoolViolence']` 쿼리를 통째로 무효화한다. */
+export function useApproveDocument(caseId: string, formId: string) {
+  const queryClient = useQueryClient()
+  const documentKey = schoolViolenceDocumentKey(caseId, formId)
+  return useMutation({
+    scope: { id: documentKey.join(':') },
+    mutationFn: () => {
+      const cached = queryClient.getQueryData<SchoolViolenceDocumentResponse>(documentKey)
+      return apiFetch<SchoolViolenceDocumentResponse>(
+        `${BASE}/${caseId}/documents/${formId}/approve`,
+        {
+          method: 'POST',
+          body: { revision: cached?.document.revision ?? 0 } satisfies ApproveDocumentRequest,
+        },
+      )
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(documentKey, data)
+      return queryClient.invalidateQueries({ queryKey: ['schoolViolence'] })
+    },
+    onError: (error) => {
+      if (error instanceof ApiError && error.status === 409) {
+        return queryClient.invalidateQueries({ queryKey: documentKey })
+      }
+    },
+  })
+}
+
+/**
+ * 사안 정보 수정. 서류의 사안 정보 칸은 서버가 읽을 때 사안 정보에서 가져오므로,
+ * 응답의 사안으로 상세 캐시를 바로 채우고 서류·목록 쿼리는 모두 다시 불러온다.
+ */
+export function useUpdateSchoolViolenceInfo(caseId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (request: UpdateSchoolViolenceInfoRequest) =>
+      apiFetch<SchoolViolenceCaseResponse>(`${BASE}/${caseId}/info`, {
+        method: 'PATCH',
+        body: request,
+      }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(schoolViolenceCaseKey(caseId), data)
+      return queryClient.invalidateQueries({ queryKey: ['schoolViolence'] })
+    },
+  })
+}

@@ -3,6 +3,7 @@ import { demoHandlers } from '@/mocks/counsel/demoHandlers.ts'
 import { studentHandlers } from '@/mocks/counsel/studentHandlers.ts'
 import { teacherHandlers } from '@/mocks/counsel/teacherHandlers.ts'
 import { apiUrl } from '@/mocks/http.ts'
+import { schoolViolenceHandlers } from '@/mocks/schoolViolence/handlers.ts'
 
 /**
  * 목 API 응답 정의. 응답 형식은 backend 스펙을 그대로 따른다.
@@ -14,4 +15,5 @@ export const handlers = [
   ...demoHandlers,
   ...studentHandlers,
   ...teacherHandlers,
+  ...schoolViolenceHandlers,
 ]

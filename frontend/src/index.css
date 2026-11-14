@@ -65,6 +65,13 @@
   --warning: oklch(0.681 0.162 75.834);
   --warning-soft: oklch(0.962 0.059 95.617);
   --warning-strong: oklch(0.414 0.112 45.904);
+  /* 학폭 서류 범례: AI가 쓴 칸(파랑)과 교사가 판단·입력하는 칸(주황). 작성 예시 docx의 색(1F4FA8·C55A11). */
+  --ai: #1f4fa8;
+  --ai-soft: #e6edf8;
+  --judge: #c55a11;
+  --judge-soft: #fbeadd;
+  /* 학폭 서류 양식의 라벨(머리글) 셀 배경. 작성 예시 docx의 E7E6E6. */
+  --form-label: #e7e6e6;
   --info: #0066ff;
   --info-soft: #f2f9ff;
   --info-strong: oklch(0.424 0.199 265.638);
@@ -132,6 +139,11 @@
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-warning-strong: var(--warning-strong);
+  --color-ai: var(--ai);
+  --color-ai-soft: var(--ai-soft);
+  --color-judge: var(--judge);
+  --color-judge-soft: var(--judge-soft);
+  --color-form-label: var(--form-label);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
   --color-info-strong: var(--info-strong);

@@ -28,7 +28,7 @@ export function Lnb({ homeTo, name, menu, bell }: LnbProps) {
   return (
     <nav
       aria-label="주 메뉴"
-      className="sticky top-0 flex h-svh w-22 shrink-0 flex-col items-center gap-3 border-r bg-secondary py-4"
+      className="sticky top-0 flex h-svh w-22 shrink-0 flex-col items-center gap-3 border-r bg-secondary py-4 print:hidden"
     >
       <Link
         to={homeTo}

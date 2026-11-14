@@ -16,7 +16,7 @@ type PageHeaderProps = {
 export function PageHeader({ title, description, back, actions }: PageHeaderProps) {
   const shell = useShell()
   return (
-    <header className="border-b bg-background px-8 pt-5 pb-6">
+    <header className="border-b bg-background px-8 pt-5 pb-6 print:hidden">
       <div className="mb-3 flex min-h-5 items-center justify-between gap-4 text-sm">
         <div className="text-muted-foreground">{back}</div>
         <div className="flex items-center gap-3">

@@ -10,6 +10,11 @@ import {
   STUDENT_COUNSEL_PATH,
   TEACHER_COUNSEL_PATH,
 } from '@/lib/counsel/paths.ts'
+import {
+  SCHOOL_VIOLENCE_PATH,
+  schoolViolenceCasePath,
+  schoolViolenceDocumentPath,
+} from '@/lib/schoolViolence/paths.ts'
 import DemoLauncherPage from '@/pages/DemoLauncherPage.tsx'
 import NotFoundPage from '@/pages/NotFoundPage.tsx'
 import ChatbotChatPage from '@/pages/student/ChatbotChatPage.tsx'
@@ -18,6 +23,9 @@ import CounselRegisterPage from '@/pages/student/CounselRegisterPage.tsx'
 import StudentCounselPage from '@/pages/student/StudentCounselPage.tsx'
 import CounselDetailPage from '@/pages/teacher/CounselDetailPage.tsx'
 import CounselManagePage from '@/pages/teacher/CounselManagePage.tsx'
+import SchoolViolenceCasePage from '@/pages/teacher/SchoolViolenceCasePage.tsx'
+import SchoolViolenceDocumentPage from '@/pages/teacher/SchoolViolenceDocumentPage.tsx'
+import SchoolViolenceListPage from '@/pages/teacher/SchoolViolenceListPage.tsx'
 
 /**
  * 화면 경로 정의. 새 페이지는 src/pages/에 만들고 알맞은 레이아웃의 children에 추가한다.
@@ -51,6 +59,12 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to={TEACHER_COUNSEL_PATH} replace /> },
       { path: TEACHER_COUNSEL_PATH, element: <CounselManagePage /> },
       { path: counselDetailPath(':id'), element: <CounselDetailPage /> },
+      { path: SCHOOL_VIOLENCE_PATH, element: <SchoolViolenceListPage /> },
+      { path: schoolViolenceCasePath(':id'), element: <SchoolViolenceCasePage /> },
+      {
+        path: schoolViolenceDocumentPath(':id', ':formId'),
+        element: <SchoolViolenceDocumentPage />,
+      },
     ],
   },
 ])

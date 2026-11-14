@@ -5,6 +5,7 @@ import type {
   Message,
   SendMessageResponse,
 } from '@/api/counselTypes.ts'
+import type { StoredSchoolViolenceCase } from '@/mocks/schoolViolence/store.ts'
 import { createSeedCases } from './seed.ts'
 
 /**
@@ -27,9 +28,13 @@ export type StoredCase = {
   replies?: Record<string, SendMessageResponse>
 }
 
-export type Db = { cases: StoredCase[] }
+export type Db = {
+  cases: StoredCase[]
+  /** 학교폭력 사안 테이블. 시연 초기화가 상담 건과 함께 비운다. */
+  schoolViolenceCases: StoredSchoolViolenceCase[]
+}
 
-const STORAGE_KEY = 'ax-counsel-demo/db/v2'
+const STORAGE_KEY = 'ax-counsel-demo/db/v3'
 
 export function loadDb(): Db {
   const raw = localStorage.getItem(STORAGE_KEY)
@@ -67,7 +72,7 @@ export function findCase(db: Db, id: string) {
 }
 
 function seedDb(): Db {
-  return { cases: createSeedCases() }
+  return { cases: createSeedCases(), schoolViolenceCases: [] }
 }
 
 export function nowIso() {
