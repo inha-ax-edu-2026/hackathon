@@ -111,6 +111,9 @@ function SchoolViolenceDocumentPage() {
 
   const title = `${doc.form_id} ${doc.name}`
   const hasDraft = doc.status !== 'none'
+  const generationRunning = generating || doc.generation_job?.status === 'running'
+  const generationFailure =
+    doc.generation_job?.status === 'failed' ? doc.generation_job.error?.detail : null
 
   async function makeDraft() {
     setGenerating(true)
@@ -142,7 +145,7 @@ function SchoolViolenceDocumentPage() {
   }
 
   const draftButton = (
-    <Button onClick={() => makeDraft()} disabled={generating || doc.locked_reason !== null}>
+    <Button onClick={() => makeDraft()} disabled={generationRunning || doc.locked_reason !== null}>
       <Sparkles /> AI 초안 만들기
     </Button>
   )
@@ -153,7 +156,7 @@ function SchoolViolenceDocumentPage() {
         back={backLink}
         title={title}
         actions={
-          layout && hasDraft && !generating ? (
+          layout && hasDraft && !generationRunning ? (
             <PrintButton documentTitle={`${title}_사안${sv.info.case_number}호`} />
           ) : undefined
         }
@@ -174,13 +177,19 @@ function SchoolViolenceDocumentPage() {
           <section className="rounded-xl border bg-card px-6 py-16 text-center text-muted-foreground">
             이 서류 양식은 아직 열 수 없어요.
           </section>
-        ) : generating ? (
-          <DraftProgress formName={title} />
+        ) : generationRunning ? (
+          <div className="space-y-4">
+            <DraftProgress formName={title} />
+            <p role="status" className="text-sm text-muted-foreground">
+              고성능 AI가 초안을 작성하고 있어요. 항목이 많은 보고서는 시간이 걸릴 수 있습니다. 다른
+              화면으로 이동하거나 새로고침해도 서버에서 계속 생성하고 결과를 자동 저장해요.
+            </p>
+          </div>
         ) : !hasDraft ? (
           <EmptyDraft
             materials={sv.materials}
             lockedReason={doc.locked_reason}
-            error={generate.error ? apiErrorMessage(generate.error) : null}
+            error={generate.error ? apiErrorMessage(generate.error) : (generationFailure ?? null)}
             action={draftButton}
           />
         ) : (

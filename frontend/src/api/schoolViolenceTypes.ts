@@ -154,6 +154,23 @@ export type SchoolViolenceDocumentSummary = {
 /** 서류 상세: 요약에 칸 목록이 붙는다. 초안이 없으면 fields가 비어 있다. */
 export type SchoolViolenceDocument = SchoolViolenceDocumentSummary & {
   fields: DocumentField[]
+  /** 화면을 닫거나 새로고침해도 서버에서 계속되는 초안 생성 작업. */
+  generation_job?: DocumentGenerationJob
+}
+
+export type DocumentGenerationJob = {
+  id: string
+  case_id: string
+  form_id: string
+  status: 'running' | 'completed' | 'failed'
+  created_at: string
+  updated_at: string
+  error: { status: number; detail: string } | null
+}
+
+export type DocumentGenerationJobResponse = {
+  job: DocumentGenerationJob
+  document?: SchoolViolenceDocument
 }
 
 /** 서류 진행률. 이번 시연에서 작업할 수 있는 서류 중 승인한 수 / 작업 가능한 서류 수. */
@@ -216,6 +233,8 @@ export type GenerateDocumentDraftRequest = {
   overwrite_confirmed?: boolean
   /** 선택한 가상 자료가 외부 고성능 AI로 전송된다는 안내를 확인한 뒤 보낸다. */
   external_consent?: boolean
+  /** 요청을 즉시 접수한 뒤 생성 작업 상태를 조회한다. */
+  async_generation?: boolean
 }
 
 /** GET .../documents/{form_id} · POST .../documents/{form_id}/draft */
