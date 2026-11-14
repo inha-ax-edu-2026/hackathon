@@ -187,3 +187,5 @@ python -m unittest discover -s tests -v
 HTML·CSS·JavaScript는 직접 작성했으며 외부 에셋을 복사하지 않았다. 의존성 버전은 `requirements.txt`를 따른다. 각 패키지의 원 라이선스가 적용된다.
 
 고성능 실제 응답 점검: `POST /api/local/verify-quality`. 고정 가상 문장으로 모델 하나만 호출하며 사용량이 발생한다.
+
+학부모 안내 챗봇·교사 문의함의 API와 시연 범위는 [PARENT_GUIDANCE.md](docs/PARENT_GUIDANCE.md)를 참고하세요.

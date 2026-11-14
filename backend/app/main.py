@@ -29,6 +29,8 @@ from app.frontend_demo import DemoStore, router as frontend_demo_router, quality
 from app.school_documents import init_documents, router as documents_router, audio_router
 from app.school_violence import init_school_cases, router as school_violence_router
 
+from app.parent_guidance import init_parent_guidance, router as parent_router
+
 STATIC_ROOT = Path(__file__).parent / "static"
 
 
@@ -72,11 +74,13 @@ def create_app(
         application.state.archive = ArchiveStore(effective.database_path, effective.risk_threshold)
         init_documents(application.state.archive)
         init_school_cases(application.state.archive)
+        init_parent_guidance(application.state.archive)
         application.state.frontend_demo = DemoStore(application.state.archive) if effective.frontend_demo_enabled else None
         application.state.interview_jobs = {}
         application.state.frontend_case_locks = {}
         application.state.school_case_locks = {}
         application.state.school_generation_tasks = {}
+        application.state.parent_message_locks = {}
         application.state.quality_probe_busy = False
         application.state.counsel = Counsel(application.state.archive)
         async with httpx.AsyncClient(
@@ -129,7 +133,7 @@ def create_app(
             return JSONResponse({"detail": "공유 서버에서는 로컬 설정·범용 생성 API를 제공하지 않습니다."}, status_code=404)
         if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
             origin = request.headers.get("origin")
-            demo_path = request.url.path.startswith(("/api/student/counsel/", "/api/teacher/counsel/", "/api/teacher/school-violence/")) or request.url.path == "/api/demo/reset"
+            demo_path = request.url.path.startswith(("/api/student/counsel/", "/api/teacher/counsel/", "/api/teacher/school-violence/", "/api/parent/", "/api/teacher/parent-")) or request.url.path == "/api/demo/reset"
             demo_cross_allowed = config.frontend_demo_enabled and demo_path and origin in integration_origins
             public_same_origin = bool(config.shared_server_mode and origin == config.public_base_url)
             if origin:
@@ -164,6 +168,7 @@ def create_app(
     application.include_router(documents_router)
     application.include_router(school_violence_router)
     application.include_router(audio_router)
+    application.include_router(parent_router)
     application.mount("/static", StaticFiles(directory=STATIC_ROOT), name="static")
 
     @application.get("/", include_in_schema=False)
@@ -250,6 +255,7 @@ def create_app(
             "counsel_contract": "archive-report-v1",
             "integration_contract": "document-demo-v1",
             "document_generation_contract": "background-jobs-v1",
+            "parent_guidance_contract": "parent-guidance-v1",
             "frontend_demo_enabled": current.frontend_demo_enabled,
             "frontend_ai_mode": current.frontend_ai_mode,
             "quality_model": current.quality_model,
