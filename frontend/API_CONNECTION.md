@@ -41,3 +41,7 @@ npm run build
 ```
 
 build는 타입 검사 → Vitest 계약 테스트 → Vite 번들 생성을 실행한다. 실제 학생 자료 대신 가상 자료를 사용한다. 외부 BAZE 인증과 일반 접속키 제거는 서로 별개이며 BAZE 키는 브라우저 코드·응답에 넣지 않는다.
+
+## 학부모 안내 챗봇
+
+런처의 학부모 카드에서 `/parent`를 엽니다. 교사 메뉴의 보호자(`/teacher/parent-inquiries`)에서 문의 확인·답변·기관 안내 완료를 기록합니다. API 단일 출처는 `backend/docs/PARENT_GUIDANCE.md`이며, 목 데이터 모드도 동일 경로를 제공합니다. 실제 전화·문자·교육지원청 발송은 연결하지 않습니다. 새 API가 404이면 공유 백엔드를 재시작하고 `/health`의 `parent_guidance_contract`를 확인하세요.

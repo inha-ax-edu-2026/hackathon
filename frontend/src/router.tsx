@@ -16,11 +16,13 @@ import {
 } from '@/lib/schoolViolence/paths.ts'
 import DemoLauncherPage from '@/pages/DemoLauncherPage.tsx'
 import NotFoundPage from '@/pages/NotFoundPage.tsx'
+import ParentGuidancePage from '@/pages/ParentGuidancePage.tsx'
 import ChatbotChatPage from '@/pages/student/ChatbotChatPage.tsx'
 import ChatbotFormPage from '@/pages/student/ChatbotFormPage.tsx'
 import CounselRegisterPage from '@/pages/student/CounselRegisterPage.tsx'
 import StudentCounselPage from '@/pages/student/StudentCounselPage.tsx'
 import CounselDetailPage from '@/pages/teacher/CounselDetailPage.tsx'
+import ParentInquiriesPage from '@/pages/teacher/ParentInquiriesPage.tsx'
 import SchoolViolenceCasePage from '@/pages/teacher/SchoolViolenceCasePage.tsx'
 import SchoolViolenceDocumentPage from '@/pages/teacher/SchoolViolenceDocumentPage.tsx'
 import SchoolViolenceListPage from '@/pages/teacher/SchoolViolenceListPage.tsx'
@@ -36,6 +38,7 @@ export const router = createBrowserRouter([
     element: <App />,
     children: [
       { index: true, element: <DemoLauncherPage /> },
+      { path: '/parent', element: <ParentGuidancePage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
@@ -56,6 +59,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to={SCHOOL_VIOLENCE_PATH} replace /> },
       { path: SCHOOL_VIOLENCE_PATH, element: <SchoolViolenceListPage /> },
+      { path: '/teacher/parent-inquiries', element: <ParentInquiriesPage /> },
       {
         path: schoolViolenceCounselDetailPath(':id'),
         element: <CounselDetailPage />,

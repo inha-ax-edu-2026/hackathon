@@ -1,4 +1,4 @@
-import { ExternalLink, GraduationCap, Presentation, RotateCcw } from 'lucide-react'
+import { ExternalLink, GraduationCap, HeartHandshake, Presentation, RotateCcw } from 'lucide-react'
 import { useResetDemo } from '@/api/demo.ts'
 import {
   BackendConnectionButton,
@@ -31,7 +31,7 @@ function DemoLauncherPage() {
       <div className="space-y-1">
         <h1 className="text-xl font-bold">AI 챗봇 상담 시연</h1>
         <p className="text-muted-foreground">
-          학생 화면과 교사 화면을 각각 새 탭으로 열어 나란히 띄워 주세요.
+          학생·교사·학부모 화면을 각각 새 탭으로 열어 나란히 띄워 주세요.
         </p>
       </div>
 
@@ -67,6 +67,22 @@ function DemoLauncherPage() {
           </a>
         ))}
       </div>
+
+      <a
+        href="/parent"
+        target="_blank"
+        rel="noopener"
+        className="group flex items-center gap-4 rounded-xl border bg-card p-5 transition-colors hover:border-primary"
+      >
+        <HeartHandshake className="size-7 shrink-0 text-primary" />
+        <div className="space-y-2">
+          <span className="flex items-center gap-1 text-base font-semibold">
+            학부모 화면 열기
+            <ExternalLink className="size-4 text-muted-foreground group-hover:text-primary" />
+          </span>
+          <p className="text-muted-foreground">절차 안내 챗봇 · 자녀 진행 단계 · 교사 문의·답변</p>
+        </div>
+      </a>
 
       <div className="flex items-center justify-between gap-4 rounded-xl border bg-card p-5">
         <div className="space-y-1">
