@@ -76,7 +76,10 @@ function SchoolViolenceDocumentPage() {
   )
 
   const backLink = (
-    <Link to={schoolViolenceCasePath(id)} className="inline-flex items-center gap-1">
+    <Link
+      to={{ pathname: schoolViolenceCasePath(id), search: '?tab=documents' }}
+      className="inline-flex items-center gap-1"
+    >
       <ChevronLeft className="size-4" />
       사안으로 돌아가기
     </Link>
