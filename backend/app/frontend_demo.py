@@ -334,15 +334,16 @@ async def teacher_list(request: Request):
 
 @router.get("/api/teacher/counsel/cases/{case_id}")
 async def teacher_detail(case_id: str, request: Request):
+    from app.school_violence import linked_case_id
     with store(request).edit(case_id, visible=True) as s:
         # 학교폭력 관련 신호는 교사의 확인을 권고할 뿐 사안 접수·판정을 수행하지 않는다.
         keywords = [keyword for keyword in s["case"]["detected_keywords"]
             if any(cue in keyword for cue in ("학교폭력", "폭행", "맞았", "따돌", "왕따", "괴롭", "폭력·위협"))]
         return {"case": s["case"], "summary": s["summary"], "form": s["form"],
             "documents": documents(s) if "documents" in s else None, "demo": True,
-            "school_violence_case_id": None,
+            "school_violence_case_id": linked_case_id(request.app.state.archive, case_id),
             "school_violence_recommendation": {"recommended": bool(keywords), "keywords": keywords},
-            "school_violence_intake_supported": False,
+            "school_violence_intake_supported": True,
             "document_workspace_path": "/document-demo"}
 
 

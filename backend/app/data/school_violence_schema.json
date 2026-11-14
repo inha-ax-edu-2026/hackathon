@@ -1,0 +1,575 @@
+{
+  "source": "frontend/src/mocks/schoolViolence/drafts and documentCatalog, schema only; no mock contents",
+  "catalog": [
+    {
+      "form_id": "1-1",
+      "name": "신고접수대장",
+      "stage": "intake",
+      "author": "책임교사",
+      "author_note": null,
+      "approval": "별도 결재 없음",
+      "approval_note": "전담기구가 비치·관리",
+      "available": false,
+      "description": "일시, 신고 경로, 신고 내용 요약이 상담 기록에 다 있어요."
+    },
+    {
+      "form_id": "1-2",
+      "name": "분리 의사 확인서",
+      "stage": "intake",
+      "author": "피해 관련 학생",
+      "author_note": "의사 표시·서명",
+      "approval": "학교장에게 제출",
+      "approval_note": null,
+      "available": false,
+      "description": "사안번호·인적사항은 자동 생성, 희망 여부와 서명은 학생이 직접 해요."
+    },
+    {
+      "form_id": "1-3",
+      "name": "사안접수보고서",
+      "stage": "intake",
+      "author": "책임교사",
+      "author_note": null,
+      "approval": "학교장 결재",
+      "approval_note": "→ 교육(지원)청 보고 (48시간 안)",
+      "available": true,
+      "description": "사안 유형·사실 요약은 상담에서, 보호자 통보 일시·방법은 시스템 기록에서 채워요."
+    },
+    {
+      "form_id": "2-1",
+      "name": "학생 작성 확인서",
+      "stage": "investigation",
+      "author": "관련 학생·목격 학생",
+      "author_note": "본인 작성",
+      "approval": "책임교사(또는 조사관) 접수",
+      "approval_note": "원본은 학교 보관",
+      "available": false,
+      "description": "학생이 쓰는 서류라 AI가 대신 쓰지 않아요. 제출·보관만 자동화할 수 있어요."
+    },
+    {
+      "form_id": "2-2",
+      "name": "보호자 확인서",
+      "stage": "investigation",
+      "author": "보호자",
+      "author_note": "본인 확인·서명",
+      "approval": "책임교사(또는 조사관) 접수",
+      "approval_note": null,
+      "available": false,
+      "description": "보호자 면담 전사를 바탕으로 초안을 만들고, 보호자가 확인·수정·서명해요."
+    },
+    {
+      "form_id": "2-3",
+      "name": "긴급조치 보고서",
+      "stage": "investigation",
+      "author": "책임교사",
+      "author_note": null,
+      "approval": "학교장 확인",
+      "approval_note": "→ 심의위원회 보고 (가해 측 조치는 추인 필요)",
+      "available": false,
+      "description": "의견청취 여부·일시·방법·내용은 면담 기록으로 채우고, 조치 결정은 학교장이 해요."
+    },
+    {
+      "form_id": "2-4",
+      "name": "사안조사 보고서",
+      "stage": "investigation",
+      "author": "전담조사관",
+      "author_note": "자체조사 시 책임교사",
+      "approval": "학교장 결재",
+      "approval_note": "조사관 배정 시 제로센터에도 보고",
+      "available": true,
+      "description": "양측 확인서와 면담 전사로 경위·양측 주장·쟁점·판단요소별 확인 사실 초안을 써요."
+    },
+    {
+      "form_id": "2-7",
+      "name": "조사관 자료 관리대장",
+      "stage": "investigation",
+      "author": "책임교사",
+      "author_note": null,
+      "approval": "별도 결재 없음",
+      "approval_note": "자료 폐기 시 조사관 서명",
+      "available": false,
+      "description": "자료 제공·폐기 이력이라 시스템 로그로 자동 기록할 수 있어요."
+    },
+    {
+      "form_id": "3-1",
+      "name": "전담기구 심의결과 보고서",
+      "stage": "review",
+      "author": "전담기구",
+      "author_note": "실무 작성: 책임교사",
+      "approval": "학교장 결재",
+      "approval_note": "자체해결 여부는 학교장이 결정",
+      "available": false,
+      "description": "일시·참석자·심의 내용 요약은 자동으로, 요건 충족 여부는 위원이 정한 대로 기록해요."
+    }
+  ],
+  "fields": {
+    "1-3": [
+      {
+        "id": "school",
+        "label": "학교명",
+        "kind": "admin"
+      },
+      {
+        "id": "case_number",
+        "label": "사안번호",
+        "kind": "admin"
+      },
+      {
+        "id": "vice_principal",
+        "label": "교감 성명",
+        "kind": "admin"
+      },
+      {
+        "id": "vice_principal_phone",
+        "label": "교감 휴대전화",
+        "kind": "manual"
+      },
+      {
+        "id": "teacher",
+        "label": "담당자(책임교사) 성명",
+        "kind": "admin"
+      },
+      {
+        "id": "teacher_phone",
+        "label": "담당자(책임교사) 휴대전화",
+        "kind": "manual"
+      },
+      {
+        "id": "received_at",
+        "label": "접수 일시",
+        "kind": "admin"
+      },
+      {
+        "id": "reporter",
+        "label": "신고자(성명, 신분)",
+        "kind": "narrative"
+      },
+      {
+        "id": "report_route",
+        "label": "접수·인지경로",
+        "kind": "narrative"
+      },
+      {
+        "id": "incident_type",
+        "label": "사안 유형",
+        "kind": "narrative"
+      },
+      {
+        "id": "investigator",
+        "label": "조사관 배정 요청 / 학교 자체 조사",
+        "kind": "manual"
+      },
+      {
+        "id": "measure2_date",
+        "label": "가해학생 제2호 조치 시행 일자",
+        "kind": "manual"
+      },
+      {
+        "id": "measure2_targets",
+        "label": "가해학생 제2호 조치 시행 대상",
+        "kind": "manual"
+      },
+      {
+        "id": "separation.enforced",
+        "label": "분리 시행 여부",
+        "kind": "admin"
+      },
+      {
+        "id": "separation.period",
+        "label": "분리 기간",
+        "kind": "admin"
+      },
+      {
+        "id": "separation.exceptions",
+        "label": "분리 예외 사유",
+        "kind": "admin"
+      },
+      {
+        "id": "facts",
+        "label": "사실확인 내용",
+        "kind": "narrative"
+      },
+      {
+        "id": "students",
+        "label": "관련 학생",
+        "kind": "admin"
+      },
+      {
+        "id": "other",
+        "label": "기타 사항(경찰신고, 고소, 소송 여부 등 · 성범죄 신고 여부)",
+        "kind": "narrative"
+      },
+      {
+        "id": "other_school.name",
+        "label": "타학교 관련 여부: 관련학교명",
+        "kind": "manual"
+      },
+      {
+        "id": "other_school.notice",
+        "label": "타학교 관련 여부: 통보여부",
+        "kind": "manual"
+      },
+      {
+        "id": "availability.victim",
+        "label": "학생 조사 가능 시간: 피해 관련 학생",
+        "kind": "manual"
+      },
+      {
+        "id": "availability.offender",
+        "label": "학생 조사 가능 시간: 가해 관련 학생",
+        "kind": "manual"
+      },
+      {
+        "id": "requests",
+        "label": "기타 요청 사항",
+        "kind": "manual"
+      }
+    ],
+    "2-4": [
+      {
+        "id": "round",
+        "label": "1차 조사 / 보완조사 구분",
+        "kind": "manual"
+      },
+      {
+        "id": "school",
+        "label": "학교명",
+        "kind": "admin"
+      },
+      {
+        "id": "case_number",
+        "label": "사안번호",
+        "kind": "admin"
+      },
+      {
+        "id": "received_at",
+        "label": "신고접수 일자",
+        "kind": "admin"
+      },
+      {
+        "id": "teacher",
+        "label": "작성자 · 책임교사 성명",
+        "kind": "admin"
+      },
+      {
+        "id": "teacher_phone",
+        "label": "작성자 · 책임교사 연락처",
+        "kind": "manual"
+      },
+      {
+        "id": "investigated_at",
+        "label": "사안조사 일자",
+        "kind": "narrative"
+      },
+      {
+        "id": "investigator",
+        "label": "작성자 · 조사관 성명",
+        "kind": "narrative"
+      },
+      {
+        "id": "investigator_phone",
+        "label": "작성자 · 조사관 연락처",
+        "kind": "manual"
+      },
+      {
+        "id": "incident_type",
+        "label": "사안 유형",
+        "kind": "narrative"
+      },
+      {
+        "id": "incident_summary",
+        "label": "사안 유형별 횟수 요약",
+        "kind": "narrative"
+      },
+      {
+        "id": "students",
+        "label": "관련 학생",
+        "kind": "admin"
+      },
+      {
+        "id": "overview",
+        "label": "사안 개요(주요 내용)",
+        "kind": "narrative"
+      },
+      {
+        "id": "timeline",
+        "label": "사안 경위(세부내용 전체, 시간순)",
+        "kind": "narrative"
+      },
+      {
+        "id": "separation.enforced",
+        "label": "분리 시행 여부",
+        "kind": "admin"
+      },
+      {
+        "id": "separation.period",
+        "label": "분리 기간",
+        "kind": "admin"
+      },
+      {
+        "id": "separation.exceptions",
+        "label": "분리 예외 사유",
+        "kind": "admin"
+      },
+      {
+        "id": "self_resolution.1.opinion",
+        "label": "자체해결 요건 1 · 조사관 의견(충족 여부)",
+        "kind": "manual"
+      },
+      {
+        "id": "self_resolution.1.facts",
+        "label": "자체해결 요건 1 · 참고 사실",
+        "kind": "narrative"
+      },
+      {
+        "id": "self_resolution.2.opinion",
+        "label": "자체해결 요건 2 · 조사관 의견(충족 여부)",
+        "kind": "manual"
+      },
+      {
+        "id": "self_resolution.2.facts",
+        "label": "자체해결 요건 2 · 참고 사실",
+        "kind": "narrative"
+      },
+      {
+        "id": "self_resolution.3.opinion",
+        "label": "자체해결 요건 3 · 조사관 의견(충족 여부)",
+        "kind": "manual"
+      },
+      {
+        "id": "self_resolution.3.facts",
+        "label": "자체해결 요건 3 · 참고 사실",
+        "kind": "narrative"
+      },
+      {
+        "id": "self_resolution.4.opinion",
+        "label": "자체해결 요건 4 · 조사관 의견(충족 여부)",
+        "kind": "manual"
+      },
+      {
+        "id": "self_resolution.4.facts",
+        "label": "자체해결 요건 4 · 참고 사실",
+        "kind": "narrative"
+      },
+      {
+        "id": "self_resolution.consent",
+        "label": "자체해결 동의 여부(현재까지 확인된 내용)",
+        "kind": "narrative"
+      },
+      {
+        "id": "issue.1.title",
+        "label": "쟁점 1 · 쟁점 문장",
+        "kind": "narrative"
+      },
+      {
+        "id": "issue.1.victim_claim",
+        "label": "쟁점 1 · 피해(관련) 학생의 주장 내용",
+        "kind": "narrative"
+      },
+      {
+        "id": "issue.1.victim_evidence",
+        "label": "쟁점 1 · 피해(관련) 주장의 근거자료",
+        "kind": "narrative"
+      },
+      {
+        "id": "issue.1.offender_claim",
+        "label": "쟁점 1 · 가해(관련) 학생의 주장 내용",
+        "kind": "narrative"
+      },
+      {
+        "id": "issue.1.offender_evidence",
+        "label": "쟁점 1 · 가해(관련) 주장의 근거자료",
+        "kind": "narrative"
+      },
+      {
+        "id": "issue.1.witness_claim",
+        "label": "쟁점 1 · 목격학생의 진술 등",
+        "kind": "narrative"
+      },
+      {
+        "id": "issue.1.witness_evidence",
+        "label": "쟁점 1 · 목격 진술의 근거자료",
+        "kind": "narrative"
+      },
+      {
+        "id": "issue.2.title",
+        "label": "쟁점 2 · 쟁점 문장",
+        "kind": "narrative"
+      },
+      {
+        "id": "issue.2.victim_claim",
+        "label": "쟁점 2 · 피해(관련) 학생의 주장 내용",
+        "kind": "narrative"
+      },
+      {
+        "id": "issue.2.victim_evidence",
+        "label": "쟁점 2 · 피해(관련) 주장의 근거자료",
+        "kind": "narrative"
+      },
+      {
+        "id": "issue.2.offender_claim",
+        "label": "쟁점 2 · 가해(관련) 학생의 주장 내용",
+        "kind": "narrative"
+      },
+      {
+        "id": "issue.2.offender_evidence",
+        "label": "쟁점 2 · 가해(관련) 주장의 근거자료",
+        "kind": "narrative"
+      },
+      {
+        "id": "issue.2.witness_claim",
+        "label": "쟁점 2 · 목격학생의 진술 등",
+        "kind": "narrative"
+      },
+      {
+        "id": "issue.2.witness_evidence",
+        "label": "쟁점 2 · 목격 진술의 근거자료",
+        "kind": "narrative"
+      },
+      {
+        "id": "common.severity",
+        "label": "학교폭력의 심각성 · 공통",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.severity.정민혁",
+        "label": "학교폭력의 심각성 · 정민혁",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.severity.박도윤",
+        "label": "학교폭력의 심각성 · 박도윤",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.severity.최서진",
+        "label": "학교폭력의 심각성 · 최서진",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.persistence.정민혁",
+        "label": "학교폭력의 지속성 · 정민혁",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.persistence.박도윤",
+        "label": "학교폭력의 지속성 · 박도윤",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.persistence.최서진",
+        "label": "학교폭력의 지속성 · 최서진",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.intent.정민혁",
+        "label": "학교폭력의 고의성 · 정민혁",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.intent.박도윤",
+        "label": "학교폭력의 고의성 · 박도윤",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.intent.최서진",
+        "label": "학교폭력의 고의성 · 최서진",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.remorse.정민혁",
+        "label": "가해학생의 반성 정도 · 정민혁",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.remorse.박도윤",
+        "label": "가해학생의 반성 정도 · 박도윤",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.remorse.최서진",
+        "label": "가해학생의 반성 정도 · 최서진",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.reconcile.정민혁",
+        "label": "보호자 간 화해 정도 · 정민혁",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.reconcile.박도윤",
+        "label": "보호자 간 화해 정도 · 박도윤",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.reconcile.최서진",
+        "label": "보호자 간 화해 정도 · 최서진",
+        "kind": "narrative"
+      },
+      {
+        "id": "common.reconcile",
+        "label": "화해 정도 · 피해 관련 학생 보호자",
+        "kind": "narrative"
+      },
+      {
+        "id": "common.program",
+        "label": "화해 정도 · 관계회복 프로그램·갈등조정",
+        "kind": "narrative"
+      },
+      {
+        "id": "factor.education.정민혁",
+        "label": "선도 가능성(담임 입력: 평소 생활태도, 사안접수 이후 변화) · 정민혁",
+        "kind": "manual"
+      },
+      {
+        "id": "factor.education.박도윤",
+        "label": "선도 가능성(담임 입력: 평소 생활태도, 사안접수 이후 변화) · 박도윤",
+        "kind": "manual"
+      },
+      {
+        "id": "factor.education.최서진",
+        "label": "선도 가능성(담임 입력: 평소 생활태도, 사안접수 이후 변화) · 최서진",
+        "kind": "manual"
+      },
+      {
+        "id": "factor.recurrence.정민혁",
+        "label": "학교폭력 재발 현황(학년 / 사안번호 / 선도조치) · 정민혁",
+        "kind": "manual"
+      },
+      {
+        "id": "factor.recurrence.박도윤",
+        "label": "학교폭력 재발 현황(학년 / 사안번호 / 선도조치) · 박도윤",
+        "kind": "manual"
+      },
+      {
+        "id": "factor.recurrence.최서진",
+        "label": "학교폭력 재발 현황(학년 / 사안번호 / 선도조치) · 최서진",
+        "kind": "manual"
+      },
+      {
+        "id": "disability",
+        "label": "피해학생이 장애학생인지 여부",
+        "kind": "sensitive"
+      },
+      {
+        "id": "urgent.victim",
+        "label": "긴급조치 여부 · 피해(관련)학생",
+        "kind": "manual"
+      },
+      {
+        "id": "urgent.offender",
+        "label": "긴급조치 여부 · 가해(관련)학생",
+        "kind": "manual"
+      },
+      {
+        "id": "special",
+        "label": "특이사항 및 고려사항",
+        "kind": "narrative"
+      },
+      {
+        "id": "etc",
+        "label": "기타 사항(보완조사: 사례회의 일시·주요 보완사항)",
+        "kind": "manual"
+      }
+    ]
+  }
+}
