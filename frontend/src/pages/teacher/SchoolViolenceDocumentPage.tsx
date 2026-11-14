@@ -2,7 +2,6 @@ import { ChevronLeft, Lock, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import {
-  useApproveDocument,
   useGenerateDocumentDraft,
   useSaveDocument,
   useSchoolViolenceCase,
@@ -10,8 +9,6 @@ import {
 } from '@/api/schoolViolence.ts'
 import type { DocumentField, SchoolViolenceMaterial } from '@/api/schoolViolenceTypes.ts'
 import { DetailCard } from '@/components/counsel/detail/DetailCard.tsx'
-import { EffectCounts } from '@/components/schoolViolence/EffectCounts.tsx'
-import { ApprovalBar } from '@/components/schoolViolence/form/ApprovalBar.tsx'
 import { DRAFT_MIN_MS, DraftProgress } from '@/components/schoolViolence/form/DraftProgress.tsx'
 import { FieldEditor } from '@/components/schoolViolence/form/FieldEditor.tsx'
 import { FieldPanel } from '@/components/schoolViolence/form/FieldPanel.tsx'
@@ -19,7 +16,6 @@ import { FormLegend } from '@/components/schoolViolence/form/FormLegend.tsx'
 import { FormView } from '@/components/schoolViolence/form/FormView.tsx'
 import { PrintButton, PrintMarks } from '@/components/schoolViolence/form/PrintControls.tsx'
 import { MaterialDialog } from '@/components/schoolViolence/MaterialDialog.tsx'
-import { VirtualCaseBanner } from '@/components/schoolViolence/VirtualCaseBanner.tsx'
 import { PageBody, PageHeader } from '@/components/shell/PageHeader.tsx'
 import { Badge } from '@/components/ui/badge.tsx'
 import { Button } from '@/components/ui/button.tsx'
@@ -40,7 +36,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
  * 서류 화면(`/teacher/school-violence/:id/documents/:formId`): 초안 만들기 → 가이드북 표 모양 양식,
- * 범례, 근거 옆 패널, 효과 숫자. 양식은 `lib/schoolViolence/forms`의 레이아웃으로 그린다.
+ * 범례와 근거 옆 패널. 양식은 `lib/schoolViolence/forms`의 레이아웃으로 그린다.
  */
 function SchoolViolenceDocumentPage() {
   const { id = '', formId = '' } = useParams()
@@ -48,7 +44,6 @@ function SchoolViolenceDocumentPage() {
   const documentQuery = useSchoolViolenceDocument(id, formId)
   const generate = useGenerateDocumentDraft(id, formId)
   const save = useSaveDocument(id, formId)
-  const approve = useApproveDocument(id, formId)
   const [reviewError, setReviewError] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -117,17 +112,12 @@ function SchoolViolenceDocumentPage() {
   const title = `${doc.form_id} ${doc.name}`
   const hasDraft = doc.status !== 'none'
 
-  /** 이미 초안이 있는 서류를 다시 만들 때는 덮어쓰기 확인을 받은 뒤에만 `overwrite`로 부른다. */
-  async function makeDraft(overwrite = false) {
+  async function makeDraft() {
     setGenerating(true)
     setReviewError(null)
-    approve.reset()
     try {
       // 요청이 빨리 끝나도 진행 표시는 끝까지 보여준다.
-      await Promise.all([
-        generate.mutateAsync(overwrite ? { overwrite_confirmed: true } : {}),
-        sleep(DRAFT_MIN_MS),
-      ])
+      await Promise.all([generate.mutateAsync({}), sleep(DRAFT_MIN_MS)])
       setSelectedId(null)
     } catch {
       // 오류 문구는 generate.error로 보인다.
@@ -144,7 +134,6 @@ function SchoolViolenceDocumentPage() {
 
   async function toggleReview(field: DocumentField, reviewed: boolean) {
     setReviewError(null)
-    approve.reset()
     try {
       await save.mutateAsync([{ id: field.id, reviewed }])
     } catch (error) {
@@ -179,9 +168,6 @@ function SchoolViolenceDocumentPage() {
         }
       />
       <PageBody className="print:p-0">
-        <div className="print:hidden">
-          <VirtualCaseBanner />
-        </div>
         {layout && hasDraft && <PrintMarks approved={doc.status === 'approved'} />}
 
         {!layout ? (
@@ -199,31 +185,8 @@ function SchoolViolenceDocumentPage() {
           />
         ) : (
           <>
-            <div className="flex flex-col gap-3 print:hidden">
-              {doc.counts && <EffectCounts counts={doc.counts} />}
-              <ApprovalBar
-                doc={doc}
-                approving={approve.isPending}
-                onApprove={() => {
-                  setReviewError(null)
-                  approve.mutate()
-                }}
-                onSelectField={setSelectedId}
-                onRegenerate={() => makeDraft(true)}
-                error={
-                  reviewError ??
-                  (approve.error
-                    ? apiErrorMessage(approve.error)
-                    : generate.error
-                      ? apiErrorMessage(generate.error)
-                      : null)
-                }
-              />
+            <div className="print:hidden">
               <FormLegend />
-              <p className="text-xs text-muted-foreground">
-                검토 전 초안이에요. 초안은 AI가 사안 자료를 바탕으로 쓴 것이고, 공식
-                보고·결재·서명은 이 서비스가 하지 않아요.
-              </p>
             </div>
             <div className="grid items-start gap-[18px] lg:grid-cols-[minmax(0,1fr)_21rem] print:block">
               <FormView
@@ -251,6 +214,11 @@ function SchoolViolenceDocumentPage() {
                   onToggleReview={toggleReview}
                   reviewPending={save.isPending}
                 />
+                {reviewError && (
+                  <p role="alert" className="mt-2 text-sm text-destructive">
+                    {reviewError}
+                  </p>
+                )}
               </div>
             </div>
           </>
