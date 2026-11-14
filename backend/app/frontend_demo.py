@@ -395,8 +395,12 @@ async def approve_doc(case_id: str, kind: str, request: Request):
 async def reset(request: Request):
     if any(lock.locked() for lock in request.app.state.frontend_case_locks.values()):
         raise HTTPException(409, "응답을 생성 중입니다. 완료 후 데모를 초기화하세요.")
+    if any(lock.locked() for lock in request.app.state.parent_message_locks.values()):
+        raise HTTPException(409, "학부모 질문을 확인 중입니다. 완료 후 초기화하세요.")
     service = store(request)
     with service.archive.connection() as db:
+        for table in ("parent_guidance_turns", "parent_inquiries", "parent_notices", "parent_procedure_events", "parent_demo_bindings"):
+            db.execute("DELETE FROM " + table)
         db.execute("DELETE FROM frontend_demo_cases")
         service.seed(db)
     return {"reset": True, "scope": "frontend_demo_only", "real_archives_retained": True}
