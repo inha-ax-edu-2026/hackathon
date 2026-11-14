@@ -48,7 +48,7 @@ export function TeacherShell() {
   return (
     <>
       <AppShell
-        homeTo={TEACHER_COUNSEL_PATH}
+        homeTo={SCHOOL_VIOLENCE_PATH}
         name={DEMO_TEACHER_NAME}
         identity={`${DEMO_TEACHER_NAME} 선생님`}
         menu={TEACHER_MENU}

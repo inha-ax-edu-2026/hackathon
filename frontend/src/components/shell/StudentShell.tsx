@@ -27,7 +27,7 @@ const STUDENT_MENU: LnbMenuItem[] = [
 export function StudentShell() {
   return (
     <AppShell
-      homeTo={STUDENT_COUNSEL_PATH}
+      homeTo={STUDENT_SCHOOL_VIOLENCE_PATH}
       name={DEMO_STUDENT.name}
       identity={studentLabel(DEMO_STUDENT)}
       menu={STUDENT_MENU}

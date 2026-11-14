@@ -13,7 +13,6 @@ import {
   requireBackendConnection,
   subscribeBackendConnection,
 } from '@/lib/api.ts'
-import { STUDENT_COUNSEL_PATH, TEACHER_COUNSEL_PATH } from '@/lib/counsel/paths.ts'
 import { queryClient } from '@/lib/queryClient.ts'
 import { router } from '@/router.tsx'
 
@@ -47,13 +46,8 @@ subscribeBackendConnection(() => {
   const next = getBackendConnection()
   if (previousConnection.mode !== next.mode || previousConnection.baseUrl !== next.baseUrl) {
     const path = window.location.pathname
-    void router.navigate(
-      path.startsWith('/teacher')
-        ? TEACHER_COUNSEL_PATH
-        : path.startsWith('/student')
-          ? STUDENT_COUNSEL_PATH
-          : '/',
-    )
+    if (path.startsWith('/teacher/')) void router.navigate('/teacher')
+    if (path.startsWith('/student/')) void router.navigate('/student')
   }
   previousConnection = next
 })

@@ -5,24 +5,23 @@ import {
   useBackendConnection,
 } from '@/components/counsel/BackendConnection.tsx'
 import { Button } from '@/components/ui/button.tsx'
-import { STUDENT_COUNSEL_PATH, TEACHER_COUNSEL_PATH } from '@/lib/counsel/paths.ts'
 
 const SCREENS = [
   {
     label: '학생 화면 열기',
-    to: STUDENT_COUNSEL_PATH,
+    to: '/student',
     icon: GraduationCap,
-    hint: '내 상담 → AI 챗봇 상담',
+    hint: '학폭 상담 → AI 챗봇 상담',
   },
   {
     label: '교사 화면 열기',
-    to: TEACHER_COUNSEL_PATH,
+    to: '/teacher',
     icon: Presentation,
-    hint: '개인상담 관리 → 상담 건 상세',
+    hint: '학교폭력 관리 → 학폭 상담 관리',
   },
 ]
 
-/** 시연 런처(`/`). 발표자가 학생·교사 화면을 새 탭으로 열고, 시연 상태를 시드로 되돌린다. */
+/** 시연 런처(`/demo`). 발표자가 학생·교사 화면을 새 탭으로 열고, 시연 상태를 시드로 되돌린다. */
 function DemoLauncherPage() {
   const reset = useResetDemo()
   const connection = useBackendConnection()
@@ -30,7 +29,7 @@ function DemoLauncherPage() {
   return (
     <section className="mx-auto flex max-w-xl flex-col gap-6 py-12">
       <div className="space-y-1">
-        <h1 className="text-xl font-bold">AI 챗봇 상담 시연</h1>
+        <h1 className="text-xl font-bold">학교폭력 상담 시연</h1>
         <p className="text-muted-foreground">
           학생 화면과 교사 화면을 각각 새 탭으로 열어 나란히 띄워 주세요.
         </p>

@@ -41,7 +41,8 @@ export const router = createBrowserRouter([
     path: '/',
     element: <App />,
     children: [
-      { index: true, element: <DemoLauncherPage /> },
+      { index: true, element: <Navigate to={SCHOOL_VIOLENCE_PATH} replace /> },
+      { path: 'demo', element: <DemoLauncherPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
@@ -49,7 +50,7 @@ export const router = createBrowserRouter([
     path: '/student',
     element: <StudentShell />,
     children: [
-      { index: true, element: <Navigate to={STUDENT_COUNSEL_PATH} replace /> },
+      { index: true, element: <Navigate to={STUDENT_SCHOOL_VIOLENCE_PATH} replace /> },
       { path: STUDENT_COUNSEL_PATH, element: <StudentCounselPage /> },
       { path: CHATBOT_FORM_PATH, element: <ChatbotFormPage /> },
       { path: chatbotPath(':id'), element: <ChatbotChatPage /> },
@@ -73,7 +74,7 @@ export const router = createBrowserRouter([
     path: '/teacher',
     element: <TeacherShell />,
     children: [
-      { index: true, element: <Navigate to={TEACHER_COUNSEL_PATH} replace /> },
+      { index: true, element: <Navigate to={SCHOOL_VIOLENCE_PATH} replace /> },
       { path: TEACHER_COUNSEL_PATH, element: <CounselManagePage /> },
       { path: counselDetailPath(':id'), element: <CounselDetailPage /> },
       { path: SCHOOL_VIOLENCE_PATH, element: <SchoolViolenceListPage /> },
