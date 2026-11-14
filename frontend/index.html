@@ -5,9 +5,113 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI 챗봇 상담</title>
+    <style>
+      /* 앱 번들이 내려오기 전에도 로딩 화면의 스타일을 적용한다. */
+      .startup-screen {
+        box-sizing: border-box;
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        overflow: auto;
+        padding: 24px;
+        background: radial-gradient(ellipse at 50% 35%, #fff0f7, transparent 64%),
+          var(--canvas, #f9fafb);
+        color: var(--foreground, #121417);
+        font-family: "Pretendard Variable", Pretendard, system-ui, sans-serif;
+        text-align: center;
+      }
+
+      .startup-card {
+        box-sizing: border-box;
+        width: min(100%, 336px);
+        padding: 32px 20px;
+        border: 1px solid var(--border, #e8eaed);
+        border-radius: 20px;
+        background: var(--card, #fff);
+        box-shadow: 0 12px 36px rgb(85 31 60 / 8%);
+      }
+
+      .startup-icon {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 16px;
+        border-radius: 14px;
+        background: var(--primary-soft, #fcdaed);
+        color: var(--primary, #e6007e);
+      }
+
+      .startup-bubble {
+        position: relative;
+        box-sizing: border-box;
+        width: 25px;
+        height: 19px;
+        border: 2px solid currentColor;
+        border-radius: 8px 8px 8px 2px;
+      }
+
+      .startup-bubble::after {
+        position: absolute;
+        top: 6px;
+        left: 9px;
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: currentColor;
+        box-shadow: -5px 0 currentColor, 5px 0 currentColor;
+        content: "";
+      }
+
+      .startup-label {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 700;
+        line-height: 1.5;
+      }
+
+      .startup-progress {
+        width: 112px;
+        height: 4px;
+        margin: 20px auto 0;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--primary-soft, #fcdaed);
+      }
+
+      .startup-progress::after {
+        display: block;
+        width: 45%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--primary, #e6007e);
+        content: "";
+        transform: translateX(60%);
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .startup-progress::after {
+          animation: startup-progress 1.3s ease-in-out infinite alternate;
+        }
+      }
+
+      @keyframes startup-progress {
+        from { transform: translateX(0); }
+        to { transform: translateX(122%); }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="startup-screen">
+        <div class="startup-card" role="status">
+          <div class="startup-icon" aria-hidden="true"><span class="startup-bubble"></span></div>
+          <p class="startup-label">상담 화면을 준비하고 있어요</p>
+          <div class="startup-progress" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

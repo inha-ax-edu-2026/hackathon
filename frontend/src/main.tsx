@@ -19,7 +19,6 @@ import { router } from '@/router.tsx'
 
 const rootElement = document.getElementById('root')
 if (!rootElement) throw new Error('#root 요소를 찾을 수 없습니다.')
-rootElement.textContent = '상담 화면을 준비하고 있습니다…'
 
 let stopMocking = () => {}
 async function setMocking(enabled: boolean) {
