@@ -142,6 +142,8 @@ export type TeacherCaseDetailResponse = {
   school_violence_case_id: string | null
   /** 학폭 권고. 권고는 참고용이며 사안을 만들지 않는다(접수는 교사만). */
   school_violence_recommendation: SchoolViolenceRecommendation
+  /** 현재 서버가 학폭 사안 접수 API를 지원하는지. 이전 서버에서 생략하면 false로 처리한다. */
+  school_violence_intake_supported?: boolean
 }
 
 /** 감지 키워드 중 학교폭력 관련 키워드가 있으면 recommended=true, keywords는 그 근거(감지된 키워드 문자열 그대로). */

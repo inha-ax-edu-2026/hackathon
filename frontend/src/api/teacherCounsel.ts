@@ -43,11 +43,35 @@ export function useTeacherCases() {
 
 export const teacherCaseDetailKey = (id: string) => ['teacherCounsel', 'detail', id] as const
 
+type TeacherCaseDetailPayload = Omit<
+  TeacherCaseDetailResponse,
+  'school_violence_case_id' | 'school_violence_recommendation'
+> & {
+  school_violence_case_id?: string | null
+  school_violence_recommendation?:
+    | TeacherCaseDetailResponse['school_violence_recommendation']
+    | null
+}
+
+/** 기존에 저장된 상담과 구버전 서버에도 새 사안 접수 카드 없이 상세를 열 수 있다. */
+export async function fetchTeacherCaseDetail(id: string, signal?: AbortSignal) {
+  const data = await apiFetch<TeacherCaseDetailPayload>(`${BASE}/${id}`, { signal })
+  return {
+    ...data,
+    school_violence_case_id: data.school_violence_case_id ?? null,
+    school_violence_recommendation: data.school_violence_recommendation ?? {
+      recommended: false,
+      keywords: [],
+    },
+    school_violence_intake_supported: data.school_violence_intake_supported ?? false,
+  } satisfies TeacherCaseDetailResponse
+}
+
 /** 상담 건 상세: 요약·양식·사후 서류. 대화 전문은 오지 않는다. */
 export function useTeacherCaseDetail(id: string) {
   return useQuery({
     queryKey: teacherCaseDetailKey(id),
-    queryFn: ({ signal }) => apiFetch<TeacherCaseDetailResponse>(`${BASE}/${id}`, { signal }),
+    queryFn: ({ signal }) => fetchTeacherCaseDetail(id, signal),
     // 없는 건(404)은 다시 시도해도 같다.
     retry: (count, error) => !(error instanceof ApiError && error.status === 404) && count < 1,
     // 승인·서류 변경이 다른 탭에서 일어나도 따라오게 한다.

@@ -97,6 +97,7 @@ function CounselDetailPage() {
     documents,
     school_violence_case_id,
     school_violence_recommendation,
+    school_violence_intake_supported,
   } = data
   const handoff = counsel.handoff
 
@@ -202,8 +203,8 @@ function CounselDetailPage() {
                   <div>
                     <p className="font-semibold">학교폭력 서류 초안</p>
                     <p className="text-sm text-muted-foreground">
-                      이전 상담·진술서·개별 면담으로 보고서 1-3·2-4를 작성해요. 작업실에서 교사 별도
-                      접속키 없이 바로 열 수 있습니다.
+                      이전 상담·진술서·개별 면담으로 보고서 1-3·2-4를 작성해요. 별도 접속키 없이
+                      작업실을 바로 열 수 있습니다.
                     </p>
                   </div>
                   <Button variant="outline" asChild>
@@ -217,11 +218,13 @@ function CounselDetailPage() {
                   </Button>
                 </section>
               )}
-              <IntakeCard
-                counselCaseId={id}
-                schoolViolenceCaseId={school_violence_case_id}
-                recommendation={school_violence_recommendation}
-              />
+              {school_violence_intake_supported && (
+                <IntakeCard
+                  counselCaseId={id}
+                  schoolViolenceCaseId={school_violence_case_id}
+                  recommendation={school_violence_recommendation}
+                />
+              )}
               <DocumentsSlot caseId={id} documents={documents} />
             </TabsContent>
           )}

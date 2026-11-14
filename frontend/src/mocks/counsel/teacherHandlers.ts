@@ -85,6 +85,7 @@ export const teacherHandlers = [
         documents: stored.documents ? toCaseDocuments(stored.documents) : null,
         school_violence_case_id: findCaseByCounsel(db, stored.case.id)?.id ?? null,
         school_violence_recommendation: recommendSchoolViolence(stored.case.detected_keywords),
+        school_violence_intake_supported: true,
       })
     },
   ),

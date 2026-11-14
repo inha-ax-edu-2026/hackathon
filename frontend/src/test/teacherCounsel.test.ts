@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import type {
   CaseListResponse,
@@ -10,7 +11,10 @@ import type {
   SendMessageResponse,
   TeacherCaseDetailResponse,
 } from '@/api/counselTypes.ts'
+import { fetchTeacherCaseDetail } from '@/api/teacherCounsel.ts'
 import { ApiError, apiFetch } from '@/lib/api.ts'
+import { apiUrl } from '@/mocks/http.ts'
+import { server } from '@/mocks/node.ts'
 
 const FORM: CounselForm = {
   topic: '교우관계',
@@ -122,6 +126,38 @@ describe('교사 목록', () => {
 })
 
 describe('교사 상세', () => {
+  it.each([undefined, null])(
+    '사안 접수 정보가 %s인 기존 서버에서도 위험 상담 상세를 연다',
+    async (recommendation) => {
+      const id = await handedOff('high')
+      const current = await detail(id)
+      const {
+        school_violence_case_id: _caseId,
+        school_violence_recommendation: _recommendation,
+        school_violence_intake_supported: _supported,
+        ...legacy
+      } = current
+      server.use(
+        http.get(apiUrl(`${T}/${id}`), () =>
+          HttpResponse.json({ ...legacy, school_violence_recommendation: recommendation }),
+        ),
+      )
+
+      const result = await fetchTeacherCaseDetail(id)
+
+      expect(result.case).toEqual(current.case)
+      expect(result.case.status).toBe('awaiting_approval')
+      expect(result.case.risk).toBe('high')
+      expect(result.summary).toBe(current.summary)
+      expect(result.form).toEqual(current.form)
+      expect(result.documents).toEqual(current.documents)
+      expect(result.school_violence_case_id).toBeNull()
+      expect(result.school_violence_recommendation).toEqual({ recommended: false, keywords: [] })
+      expect(result.school_violence_intake_supported).toBe(false)
+      expect(result).not.toHaveProperty('messages')
+    },
+  )
+
   it('요약·양식이 오고 대화 전문(messages)은 어디에도 없다', async () => {
     const id = await handedOff('high')
 
@@ -131,6 +167,7 @@ describe('교사 상세', () => {
     expect(res.summary).toBeTruthy()
     expect(res.form).toEqual(FORM)
     expect(Object.keys(res)).not.toContain('messages')
+    expect((await fetchTeacherCaseDetail(id)).school_violence_intake_supported).toBe(true)
   })
 
   it('전환 요약과 서류 초안에 학생이 보낸 말이 그대로 들어가지 않는다', async () => {
