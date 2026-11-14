@@ -46,7 +46,13 @@ SQLite 저장 공간이 지속되는 단일 프로세스 백엔드가 필요하�
 
 ## 프론트 호환 API
 
-교사 상세는 기존 상담 데이터에도 `school_violence_case_id=null`, `school_violence_recommendation={recommended, keywords}`를 반환한다. 이 권고는 관련 감지 키워드의 확인 안내이며 학폭 판정·자동 접수가 아니다. 현재 실제 서버는 사안 접수 API를 지원하지 않아 `school_violence_intake_supported=false`를 반환하고, 프론트는 기존 상담 요약·신청 양식·사후 서류·별도 서류 작업실을 표시한다. 해당 필드가 없는 이전 서버 응답도 프론트 API 어댑터가 빈 권고와 접수 미지원 상태로 보완한다. 기존 상담 DB를 초기화할 필요가 없다.
+교사 상세는 `school_violence_case_id`(미연결 시 null), `school_violence_recommendation={recommended, keywords}`, `school_violence_intake_supported=true`를 반환한다. 이 권고는 관련 감지 키워드의 확인 안내이며 학폭 판정·자동 접수가 아니다. 교사가 서류 작업실을 열면 해당 상담에 연결된 사안을 재사용하고, 프론트의 팀 디자인으로 사안 자료·1-3·2-4 양식을 연다. 해당 필드가 없는 이전 서버 응답도 프론트 API 어댑터가 보완하므로 기존 상담 상세는 열리지만, 새 서류 작업실 API를 쓰려면 백엔드를 재시작해야 한다. 기존 상담 DB를 초기화할 필요가 없다.
+
+### 팀 프론트 서류 작업실 API
+
+`/api/teacher/school-violence/cases`의 GET/POST는 목록·교사가 선택한 상담의 사안 생성이다. `/{id}` GET, `/{id}/info` PATCH는 사안·공유 정보를 조회·수정한다. `/{id}/documents/{form_id}` GET과 `/draft`, `/save`, `/approve` POST는 1-3·2-4 초안·부분 수정·교사 검토 상태를 관리한다. 승인 표시는 결재·제출이 아니다. 중복 접수와 오래된 개정의 저장·미확인 덮어쓰기는 409, 근거 없는 모델 인용은 502로 거절하며 원래 저장본은 유지한다.
+
+사안·초안·근거·검토 상태는 같은 SQLite의 `school_violence_cases`에 저장된다. `app/data/school_violence_schema.json`은 팀 프론트 양식의 칸 ID·처리 방식·9종 목록만 옮긴 계약이며 모의 답안은 포함하지 않는다. 실제 생성은 `FRONTEND_AI_MODE=baze`와 `BAZE_QUALITY_MODEL`을 사용한다. 가상 자료 전송 안내를 확인한 생성 요청만 모델을 호출한다. 학생 진술서·사안 처리 중 개별 면담 시연 자료는 연결 상담과 분리 표시하며 성별·장애·조치·통보 사실을 모델이 추정하지 않는다. `/document-demo`는 내부 점검 도구로 유지한다.
 
 | 메서드 | 경로 | 동작 |
 | --- | --- | --- |

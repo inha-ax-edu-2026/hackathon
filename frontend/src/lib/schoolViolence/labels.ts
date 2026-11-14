@@ -45,7 +45,11 @@ export const DOCUMENT_STATUS_LABEL: Record<DocumentStatus, string> = {
   approved: '승인',
 }
 
-export const GENDER_LABEL: Record<RelatedStudent['gender'], string> = { male: '남', female: '여' }
+export const GENDER_LABEL: Record<RelatedStudent['gender'], string> = {
+  male: '남',
+  female: '여',
+  unknown: '미확인',
+}
 
 /** 「11.13. 유선」, 통보하지 않았으면 「미통보」 */
 export function guardianNoticeLabel({ notified, at, method }: GuardianNotice) {

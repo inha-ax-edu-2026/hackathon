@@ -87,7 +87,7 @@ class DocumentTests(unittest.TestCase):
         self.assertIsNone(detail["school_violence_case_id"])
         self.assertEqual(detail["school_violence_recommendation"],
             {"recommended": True, "keywords": ["괴롭힘·따돌림"]})
-        self.assertFalse(detail["school_violence_intake_supported"])
+        self.assertTrue(detail["school_violence_intake_supported"])
         self.assertEqual(self.client.post("/api/teacher/counsel/cases/" + sid + "/approve").json()["case"]["status"], "awaiting_counsel")
         self.assertEqual(self.client.post(path + "/messages", json={"text": "다른 내용", "request_id": "turn-0"}).status_code, 409)
         self.assertEqual(self.calls, [])
@@ -135,7 +135,7 @@ class DocumentTests(unittest.TestCase):
                 self.assertEqual(detail[key], before[key])
             self.assertEqual(detail["school_violence_recommendation"], {"recommended": False, "keywords": []})
             self.assertIsNone(detail["school_violence_case_id"])
-            self.assertFalse(detail["school_violence_intake_supported"])
+            self.assertTrue(detail["school_violence_intake_supported"])
             self.assertEqual(detail["case"]["risk"], "high")
             self.assertNotIn("messages", detail)
 

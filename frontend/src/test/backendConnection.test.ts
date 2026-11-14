@@ -60,6 +60,19 @@ describe('접속키 없는 백엔드 연결', () => {
       expect(await apiFetch(route)).toEqual({ items: [] })
     }
   })
+  it('실제 연결의 서류 작업실 요청은 선택한 백엔드로 전송한다', async () => {
+    backend()
+    await connect()
+    let received = false
+    server.use(
+      http.get(`${BASE}/api/teacher/school-violence/cases`, () => {
+        received = true
+        return HttpResponse.json({ cases: [] })
+      }),
+    )
+    expect(await apiFetch('/api/teacher/school-violence/cases')).toEqual({ cases: [] })
+    expect(received).toBe(true)
+  })
   it('이전 접속키 헤더가 남아 있어도 전송하지 않는다', async () => {
     backend()
     await connect()

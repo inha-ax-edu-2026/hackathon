@@ -10,7 +10,8 @@ import type {
   SchoolViolenceDocumentResponse,
   UpdateSchoolViolenceInfoRequest,
 } from '@/api/schoolViolenceTypes.ts'
-import { ApiError, apiFetch, getBackendConnection } from '@/lib/api.ts'
+import { ApiError, apiFetch } from '@/lib/api.ts'
+import { fetchTeacherCaseDetail } from './teacherCounsel.ts'
 
 /**
  * 교사 학교폭력 사안 API 훅 (`/api/teacher/school-violence/...`, 제안 계약).
@@ -19,6 +20,47 @@ import { ApiError, apiFetch, getBackendConnection } from '@/lib/api.ts'
  */
 
 const BASE = '/api/teacher/school-violence/cases'
+
+/** 서류 작업실 열기. 이미 연결한 사안은 재사용하며 모의 API로 대체하지 않는다. */
+export async function openSchoolViolenceWorkspace(counselCaseId: string) {
+  const detail = await fetchTeacherCaseDetail(counselCaseId)
+  if (detail.school_violence_case_id) {
+    return apiFetch<SchoolViolenceCaseResponse>(`${BASE}/${detail.school_violence_case_id}`)
+  }
+  try {
+    return await apiFetch<SchoolViolenceCaseResponse>(BASE, {
+      method: 'POST',
+      body: { counsel_case_id: counselCaseId } satisfies IntakeSchoolViolenceCaseRequest,
+    })
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 409) {
+      const latest = await fetchTeacherCaseDetail(counselCaseId)
+      if (latest.school_violence_case_id) {
+        return apiFetch<SchoolViolenceCaseResponse>(`${BASE}/${latest.school_violence_case_id}`)
+      }
+    }
+    if (error instanceof ApiError && error.status === 404) {
+      throw new ApiError(503, {
+        detail: '서류 작업실 연동을 적용하려면 백엔드 서버를 최신 코드로 재시작해 주세요.',
+      })
+    }
+    throw error
+  }
+}
+
+export function useOpenSchoolViolenceWorkspace() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: openSchoolViolenceWorkspace,
+    onSuccess: (data) => {
+      queryClient.setQueryData(schoolViolenceCaseKey(data.case.id), data)
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: schoolViolenceCasesKey }),
+        queryClient.invalidateQueries({ queryKey: ['teacherCounsel'] }),
+      ])
+    },
+  })
+}
 
 /** 사안 목록 query key */
 export const schoolViolenceCasesKey = ['schoolViolence', 'cases'] as const
@@ -57,11 +99,7 @@ export function useIntakeSchoolViolenceCase() {
     mutationFn: (counselCaseId: string) =>
       apiFetch<SchoolViolenceCaseResponse>(BASE, {
         method: 'POST',
-        body: {
-          counsel_case_id: counselCaseId,
-          // 백엔드 모드의 상담 건은 목 저장소에 없다. 사안만 목이 처리한다.
-          external_counsel: getBackendConnection().mode === 'backend',
-        } satisfies IntakeSchoolViolenceCaseRequest,
+        body: { counsel_case_id: counselCaseId } satisfies IntakeSchoolViolenceCaseRequest,
       }),
     onSuccess: (data) => {
       queryClient.setQueryData(schoolViolenceCaseKey(data.case.id), data)
@@ -73,12 +111,12 @@ export function useIntakeSchoolViolenceCase() {
   })
 }
 
-/** 상담 건에 연결된 사안 ID. 백엔드 상담 응답에는 연결 정보가 없어 사안 목록에서 찾는다. */
+/** 상담 건에 연결된 사안 ID. 실제 서버와 명시적 모의 모드 모두 같은 계약을 사용한다. */
 export function useLinkedSchoolViolenceCaseId(counselCaseId: string, enabled: boolean) {
   const { data } = useQuery({
     queryKey: schoolViolenceCasesKey,
     queryFn: () => apiFetch<SchoolViolenceCaseListResponse>(BASE),
-    select: (res) => res.cases.find((c) => c.counsel_case_ids.includes(counselCaseId))?.id ?? null,
+    select: (res) => res.cases.find((c) => c.counsel_case_ids?.includes(counselCaseId))?.id ?? null,
     enabled,
   })
   return data ?? null
