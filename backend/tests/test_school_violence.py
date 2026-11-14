@@ -1,6 +1,9 @@
 """팀 프론트의 서류 작업실 API를 실제 SQLite·ASGI·가상 모델 전송으로 검증한다."""
 
 import json
+import asyncio
+import threading
+import time
 import unittest
 from dataclasses import replace
 from unittest.mock import patch
@@ -9,6 +12,7 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.main import create_app
+from app.school_violence import proposals as original_proposals
 import test_documents as fixtures
 
 
@@ -137,7 +141,8 @@ class SchoolWorkspaceTests(unittest.TestCase):
         calls = []
         bad_quote = False
 
-        async def model(gateway, name, messages, schema):
+        async def model(gateway, name, messages, schema, **options):
+            self.assertGreaterEqual(options["timeout_seconds"], 180)
             calls.append(name)
             packet = json.loads(messages[-1]["content"])
             source = packet["materials"][0]
@@ -157,13 +162,121 @@ class SchoolWorkspaceTests(unittest.TestCase):
             self.assertEqual(self.client.get(f"{BASE}/{case['id']}/documents/1-3").json()["document"], before)
         self.assertEqual(calls, [self.config.quality_model] * 2)
 
-        async def failed(*args):
+        async def failed(*args, **kwargs):
             raise HTTPException(503, "테스트 공급사 오류")
         with patch("app.school_violence.Gateway.chat", new=failed):
             self.assertEqual(self.draft(case, overwrite_confirmed=True, external_consent=True).status_code, 503)
 
     def test_unknown_origin_cannot_create_case(self):
         self.assertEqual(self.client.post(BASE, json={"counsel_case_id": "anything"}, headers={"Origin": "https://untrusted.example"}).status_code, 403)
+
+    def wait_job(self, path):
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            result = self.client.get(path)
+            self.assertEqual(result.status_code, 200, result.text)
+            if result.json()["job"]["status"] != "running":
+                return result.json()
+            time.sleep(0.01)
+        self.fail("생성 작업이 끝나지 않았습니다.")
+
+    def test_async_draft_returns_before_model_and_deduplicates_clicks(self):
+        case = self.intake()
+        release, started = threading.Event(), threading.Event()
+        calls = []
+
+        async def slow(*args):
+            calls.append(1)
+            started.set()
+            while not release.is_set():
+                await asyncio.sleep(0.01)
+            return await original_proposals(*args)
+
+        with patch("app.school_violence.proposals", new=slow):
+            try:
+                accepted = self.draft(case, "2-4", async_generation=True)
+                self.assertEqual(accepted.status_code, 202, accepted.text)
+                self.assertTrue(started.wait(1))
+                self.assertFalse(release.is_set())  # 모델이 끝나기 전에 HTTP 접수 응답을 받았다.
+                job = accepted.json()["job"]
+                repeated = self.draft(case, "2-4", async_generation=True)
+                self.assertEqual(repeated.status_code, 202)
+                self.assertEqual(repeated.json()["job"]["id"], job["id"])
+                path = f"{BASE}/{case['id']}/documents/2-4"
+                doc = self.client.get(path).json()["document"]
+                self.assertEqual(doc["generation_job"]["id"], job["id"])
+                self.assertEqual(doc["status"], "none")
+                self.assertEqual(self.client.get(f"{BASE}/{case['id']}/documents/1-3/jobs/{job['id']}").status_code, 404)
+                release.set()
+                completed = self.wait_job(path + "/jobs/" + job["id"])
+                self.assertEqual(completed["job"]["status"], "completed")
+                self.assertEqual(completed["document"]["status"], "reviewing")
+                self.assertEqual(len(calls), 1)
+                reused = self.draft(case, "2-4", async_generation=True)
+                self.assertEqual(reused.json()["document"]["revision"], 1)
+                self.assertEqual(len(calls), 1)
+            finally:
+                release.set()
+
+    def test_async_failure_reports_reason_and_preserves_saved_draft(self):
+        case = self.intake()
+        before = self.draft(case).json()["document"]
+
+        async def failed(*args):
+            raise HTTPException(504, "고성능 모델 응답 대기 시간이 초과되었습니다.")
+
+        with patch("app.school_violence.proposals", new=failed):
+            accepted = self.draft(case, async_generation=True, overwrite_confirmed=True).json()
+            path = f"{BASE}/{case['id']}/documents/1-3"
+            result = self.wait_job(path + "/jobs/" + accepted["job"]["id"])
+            self.assertEqual(result["job"]["status"], "failed")
+            self.assertEqual(result["job"]["error"]["status"], 504)
+            self.assertIn("응답 대기", result["job"]["error"]["detail"])
+            self.assertNotIn("document", result)
+            saved = self.client.get(path).json()["document"]
+            for key in ("fields", "revision", "status"):
+                self.assertEqual(saved[key], before[key])
+
+    def test_async_case_edit_during_generation_does_not_overwrite_new_info(self):
+        case = self.intake()
+        release, started = threading.Event(), threading.Event()
+
+        async def slow(*args):
+            started.set()
+            while not release.is_set():
+                await asyncio.sleep(0.01)
+            return await original_proposals(*args)
+
+        with patch("app.school_violence.proposals", new=slow):
+            try:
+                accepted = self.draft(case, async_generation=True).json()
+                self.assertTrue(started.wait(1))
+                self.client.patch(f"{BASE}/{case['id']}/info", json={"teacher_name": "새로 확인한 담당 교사"}).raise_for_status()
+                release.set()
+                path = f"{BASE}/{case['id']}/documents/1-3"
+                result = self.wait_job(path + "/jobs/" + accepted["job"]["id"])
+                self.assertEqual(result["job"]["error"]["status"], 409)
+                self.assertEqual(self.client.get(path).json()["document"]["status"], "none")
+            finally:
+                release.set()
+
+    def test_server_shutdown_marks_running_job_for_retry_after_restart(self):
+        case = self.intake()
+
+        async def blocked(*args):
+            await asyncio.Future()
+
+        path = f"{BASE}/{case['id']}/documents/1-3"
+        with patch("app.school_violence.proposals", new=blocked):
+            with TestClient(create_app(self.config), base_url="http://127.0.0.1") as client:
+                response = client.post(path + "/draft", json={"async_generation": True})
+                self.assertEqual(response.status_code, 202)
+                job_id = response.json()["job"]["id"]
+        with TestClient(create_app(self.config), base_url="http://127.0.0.1") as client:
+            result = client.get(path + "/jobs/" + job_id).json()
+            self.assertEqual(result["job"]["status"], "failed")
+            self.assertEqual(result["job"]["error"]["status"], 503)
+            self.assertEqual(client.get(path).json()["document"]["status"], "none")
 
 
 if __name__ == "__main__":

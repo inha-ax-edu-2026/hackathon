@@ -50,6 +50,10 @@ SQLite 저장 공간이 지속되는 단일 프로세스 백엔드가 필요하�
 
 ### 팀 프론트 서류 작업실 API
 
+서류 생성은 `POST .../documents/{form_id}/draft`에 `async_generation=true`를 보내면 202와 작업 ID를 즉시 반환한다. `GET .../documents/{form_id}/jobs/{job_id}`로 running/completed/failed를 조회하고, 완료 응답의 document를 표시한다. 일반 서류 조회에도 최신 `generation_job`이 포함되어 새로고침 후 진행 상태를 이어 볼 수 있다. 같은 서류의 중복 요청은 진행 중인 작업이나 이미 저장한 결과를 재사용한다. 명시적 덮어쓰기 요청은 별도다.
+
+생성 작업과 결과는 SQLite에 보관한다. 브라우저 연결 종료는 생성을 취소하지 않는다. 서버 재시작·종료로 작업이 중단되면 실패 상태와 재시도 안내를 남기고 기존 초안을 유지한다. 고성능 서류 생성만 공급사 응답을 최소 180초 기다리며 상담 요청의 기본 대기 시간은 그대로다. 공급사 오류·근거 검증 실패는 작업의 error로 전달하고 모의 성공으로 대체하지 않는다. 새 코드 적용 여부는 `/health`의 `document_generation_contract=background-jobs-v1`로 확인한다.
+
 `/api/teacher/school-violence/cases`의 GET/POST는 목록·교사가 선택한 상담의 사안 생성이다. `/{id}` GET, `/{id}/info` PATCH는 사안·공유 정보를 조회·수정한다. `/{id}/documents/{form_id}` GET과 `/draft`, `/save`, `/approve` POST는 1-3·2-4 초안·부분 수정·교사 검토 상태를 관리한다. 승인 표시는 결재·제출이 아니다. 중복 접수와 오래된 개정의 저장·미확인 덮어쓰기는 409, 근거 없는 모델 인용은 502로 거절하며 원래 저장본은 유지한다.
 
 사안·초안·근거·검토 상태는 같은 SQLite의 `school_violence_cases`에 저장된다. `app/data/school_violence_schema.json`은 팀 프론트 양식의 칸 ID·처리 방식·9종 목록만 옮긴 계약이며 모의 답안은 포함하지 않는다. 실제 생성은 `FRONTEND_AI_MODE=baze`와 `BAZE_QUALITY_MODEL`을 사용한다. 가상 자료 전송 안내를 확인한 생성 요청만 모델을 호출한다. 학생 진술서·사안 처리 중 개별 면담 시연 자료는 연결 상담과 분리 표시하며 성별·장애·조치·통보 사실을 모델이 추정하지 않는다. `/document-demo`는 내부 점검 도구로 유지한다.

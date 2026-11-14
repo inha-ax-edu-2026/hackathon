@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError, model_validator
 
 from app.archive import decode, encode, now
@@ -83,6 +84,7 @@ class InfoPatch(Input):
 class Generate(Input):
     overwrite_confirmed: bool = False
     external_consent: bool = False
+    async_generation: bool = False
 
 
 class Evidence(Input):
@@ -126,6 +128,26 @@ router = APIRouter(prefix="/api/teacher/school-violence/cases", tags=["팀 프�
 def init_school_cases(archive):
     with archive.connection() as db:
         db.execute("CREATE TABLE IF NOT EXISTS school_violence_cases(id TEXT PRIMARY KEY,counsel_id TEXT UNIQUE NOT NULL,payload TEXT NOT NULL)")
+        db.execute("CREATE TABLE IF NOT EXISTS school_document_jobs(id TEXT PRIMARY KEY,case_id TEXT NOT NULL,form_id TEXT NOT NULL,status TEXT NOT NULL,payload TEXT NOT NULL)")
+        for row in db.execute("SELECT payload FROM school_document_jobs WHERE status='running'").fetchall():
+            job = decode(row[0])
+            job.update(status="failed", updated_at=now(), error={"status": 503, "detail": "서버가 재시작되어 생성을 중단했습니다. 저장된 초안은 유지됩니다. 다시 생성해 주세요."})
+            db.execute("UPDATE school_document_jobs SET status=?,payload=? WHERE id=?", (job["status"], encode(job), job["id"]))
+
+
+def latest_generation_job(db, case_id, form_id, active_only=False):
+    condition = " AND status='running'" if active_only else ""
+    row = db.execute("SELECT payload FROM school_document_jobs WHERE case_id=? AND form_id=?" + condition + " ORDER BY rowid DESC LIMIT 1", (case_id, form_id)).fetchone()
+    return decode(row[0]) if row else None
+
+
+def finish_generation_job(archive, job_id, status, error=None):
+    with archive.connection() as db:
+        row = db.execute("SELECT payload FROM school_document_jobs WHERE id=?", (job_id,)).fetchone()
+        if row:
+            job = decode(row[0])
+            job.update(status=status, error=error, updated_at=now())
+            db.execute("UPDATE school_document_jobs SET status=?,payload=? WHERE id=?", (status, encode(job), job_id))
 
 
 def linked_case_id(archive, counsel_id):
@@ -305,7 +327,11 @@ async def update_info(case_id: str, body: InfoPatch, request: Request):
 async def document(case_id: str, form_id: str, request: Request):
     with request.app.state.archive.connection() as db:
         record = load(db, case_id)
-        return {"document": document_response(record, find_doc(record, form_id))}
+        doc = document_response(record, find_doc(record, form_id))
+        job = latest_generation_job(db, case_id, form_id)
+        if job:
+            doc["generation_job"] = job
+        return {"document": doc}
 
 
 async def proposals(request, record, schema, consent):
@@ -331,7 +357,8 @@ async def proposals(request, record, schema, consent):
         "빈 값이 아닌 모든 칸에 source_id와 원문에 그대로 존재하는 quote를 붙인다. 각 칸은 핵심만 간결하게 작성한다. "
         "report_route 값은 근거가 명시된 경우에만 victim_direct, teacher_guardian, peer 중 하나이며 없으면 비워 둔다.")
     raw, usage = await Gateway(config, request.app.state.client).chat(config.quality_model,
-        [{"role": "system", "content": prompt}, {"role": "user", "content": encode({"fields": narrative, "materials": record["materials"]})}], Output.model_json_schema())
+        [{"role": "system", "content": prompt}, {"role": "user", "content": encode({"fields": narrative, "materials": record["materials"]})}], Output.model_json_schema(),
+        timeout_seconds=max(config.timeout_seconds, 180.0))
     try:
         output = Output.model_validate_json(raw).fields
     except (ValidationError, ValueError):
@@ -346,20 +373,26 @@ async def proposals(request, record, schema, consent):
     return output, config.quality_model, usage
 
 
-@router.post("/{case_id}/documents/{form_id}/draft", status_code=201)
-async def draft(case_id: str, form_id: str, body: Generate, request: Request):
+def validate_generation(record, form_id, body, request):
+    doc = find_doc(record, form_id)
+    if not doc["available"] or form_id not in SCHEMA["fields"]:
+        raise HTTPException(409, "이번 시연 범위 밖의 서류입니다.")
+    reason = lock_reason(record, form_id)
+    if reason:
+        raise HTTPException(409, reason)
+    if doc["status"] != "none" and not body.overwrite_confirmed:
+        raise HTTPException(409, "이미 만든 초안입니다. 덮어쓰기 확인이 필요합니다.")
+    if request.app.state.settings.frontend_ai_mode == "baze" and not body.external_consent:
+        raise HTTPException(422, "가상 자료를 고성능 AI에 전송하는 안내를 확인하세요.")
+    return doc
+
+
+async def generate_and_save(case_id, form_id, body, request):
     lock = request.app.state.school_case_locks.setdefault(case_id, asyncio.Lock())
     async with lock:
         with request.app.state.archive.connection() as db:
             record = load(db, case_id)
-        doc = find_doc(record, form_id)
-        if not doc["available"] or form_id not in SCHEMA["fields"]:
-            raise HTTPException(409, "이번 시연 범위 밖의 서류입니다.")
-        reason = lock_reason(record, form_id)
-        if reason:
-            raise HTTPException(409, reason)
-        if doc["status"] != "none" and not body.overwrite_confirmed:
-            raise HTTPException(409, "이미 만든 초안입니다. 덮어쓰기 확인이 필요합니다.")
+        doc = validate_generation(record, form_id, body, request)
         schema = field_schema(form_id, record["info"]["students"])
         output, model, usage = await proposals(request, record, schema, body.external_consent)
         values = {p.id: p for p in output}
@@ -375,6 +408,67 @@ async def draft(case_id: str, form_id: str, body: Generate, request: Request):
             current.update(fields=fields, status="reviewing", revision=current["revision"] + (current["status"] != "none"), model=model, usage=usage)
             persist(db, fresh)
         return {"document": document_response(fresh, current)}
+
+
+async def run_generation_job(job, body, request):
+    archive = request.app.state.archive
+    try:
+        await generate_and_save(job["case_id"], job["form_id"], body, request)
+    except asyncio.CancelledError:
+        finish_generation_job(archive, job["id"], "failed", {"status": 503, "detail": "서버 종료로 생성을 중단했습니다. 저장된 초안은 유지됩니다. 다시 생성해 주세요."})
+        raise
+    except HTTPException as error:
+        detail = error.detail if isinstance(error.detail, str) else "초안을 생성하지 못했습니다. 저장된 초안은 유지됩니다."
+        finish_generation_job(archive, job["id"], "failed", {"status": error.status_code, "detail": detail})
+    except Exception:
+        finish_generation_job(archive, job["id"], "failed", {"status": 500, "detail": "초안 생성 중 오류가 발생했습니다. 저장된 초안은 유지됩니다. 다시 시도해 주세요."})
+    else:
+        finish_generation_job(archive, job["id"], "completed")
+
+
+@router.post("/{case_id}/documents/{form_id}/draft", status_code=201)
+async def draft(case_id: str, form_id: str, body: Generate, request: Request):
+    archive = request.app.state.archive
+    if not body.async_generation:
+        with archive.connection() as db:
+            if latest_generation_job(db, case_id, form_id, True):
+                raise HTTPException(409, "이미 초안을 생성 중입니다. 잠시 후 화면을 다시 확인하세요.")
+        return await generate_and_save(case_id, form_id, body, request)
+    with archive.connection() as db:
+        db.execute("BEGIN IMMEDIATE")
+        record = load(db, case_id)
+        doc = find_doc(record, form_id)
+        active = latest_generation_job(db, case_id, form_id, True)
+        if active:
+            return JSONResponse({"job": active}, status_code=202)
+        # 응답 연결만 끊긴 뒤 다시 누른 경우 이미 저장한 결과를 재사용한다.
+        if doc["status"] != "none" and not body.overwrite_confirmed:
+            return {"document": document_response(record, doc)}
+        validate_generation(record, form_id, body, request)
+        if db.execute("SELECT COUNT(*) FROM school_document_jobs WHERE status='running'").fetchone()[0] >= 8:
+            raise HTTPException(429, "생성 중인 서류가 많습니다. 잠시 후 다시 시도해 주세요.")
+        stamp = now()
+        job = {"id": secrets.token_urlsafe(18), "case_id": case_id, "form_id": form_id,
+            "status": "running", "created_at": stamp, "updated_at": stamp, "error": None}
+        db.execute("INSERT INTO school_document_jobs VALUES(?,?,?,?,?)", (job["id"], case_id, form_id, "running", encode(job)))
+    task = asyncio.create_task(run_generation_job(job, body, request))
+    request.app.state.school_generation_tasks[job["id"]] = task
+    task.add_done_callback(lambda _: request.app.state.school_generation_tasks.pop(job["id"], None))
+    return JSONResponse({"job": job}, status_code=202)
+
+
+@router.get("/{case_id}/documents/{form_id}/jobs/{job_id}")
+async def generation_status(case_id: str, form_id: str, job_id: str, request: Request):
+    with request.app.state.archive.connection() as db:
+        row = db.execute("SELECT payload FROM school_document_jobs WHERE id=? AND case_id=? AND form_id=?", (job_id, case_id, form_id)).fetchone()
+        if not row:
+            raise HTTPException(404, "생성 작업을 찾을 수 없습니다.")
+        job = decode(row[0])
+        result = {"job": job}
+        if job["status"] == "completed":
+            record = load(db, case_id)
+            result["document"] = document_response(record, find_doc(record, form_id))
+        return result
 
 
 def editable(record, form_id, revision):
