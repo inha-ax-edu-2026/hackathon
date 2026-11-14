@@ -1,4 +1,10 @@
 import type { CounselForm, HandoffReason, Message, Risk } from '@/api/counselTypes.ts'
+import {
+  DETAIL_QUESTION,
+  DISTRESS_QUESTION,
+  SCHOOL_VIOLENCE_TOPIC,
+  START_TIME,
+} from '@/lib/counsel/form.ts'
 import { DEMO_STUDENT } from '@/lib/counsel/identity.ts'
 import { HANDOFF_REASON_LABEL, RISK_LABEL } from '@/lib/counsel/labels.ts'
 import { KEYWORDS } from './judgment.ts'
@@ -51,14 +57,17 @@ const ACKS = ['그랬구나.', '말해줘서 고마워.', '그런 마음이었�
 
 const clip = (text: string, n: number) => (text.length > n ? `${text.slice(0, n)}…` : text)
 
-const followups = (form: CounselForm) => FOLLOWUPS[form.topic] ?? FOLLOWUPS.기타
+const followups = (form: CounselForm) =>
+  form.topic === SCHOOL_VIOLENCE_TOPIC
+    ? FOLLOWUPS.교우관계
+    : (FOLLOWUPS[form.topic] ?? FOLLOWUPS.기타)
 
-/** 양식에서 질문 문구에 `hint`가 든 항목의 답. 양식이 확정되기 전이라 질문 문구로 찾는다. */
+/** 양식에서 질문 문구에 `hint`가 든 항목의 답. 이전에 저장한 양식의 질문 문구도 지원한다. */
 const answerOf = (form: CounselForm, hint: string) =>
   form.answers.find((a) => a.question.includes(hint) && a.answer.trim())?.answer.trim() ?? null
 
 export function greeting(form: CounselForm) {
-  const concern = answerOf(form, '어떤 고민')
+  const concern = answerOf(form, DETAIL_QUESTION) ?? answerOf(form, '어떤 고민')
   const opening = concern
     ? `양식에 "${clip(concern, 36)}"라고 적어 줬네. 이야기해 줘서 고마워.`
     : `${form.topic} 이야기를 하고 싶구나. 와 줘서 고마워.`
@@ -95,11 +104,15 @@ type SummarySource = {
 
 const keywordList = (keywords: string[]) => keywords.map((k) => `'${k}'`).join(', ')
 
-/** 양식에서 고른 답(기분 점수·기간)만 옮기고, 학생이 직접 쓴 글은 인용하지 않는다. */
+/** 양식에서 고른 시작 시기와 점수만 옮기고, 학생이 직접 쓴 글은 인용하지 않는다. */
 function formSentence(form: CounselForm) {
   const mood = answerOf(form, '기분')
   const duration = answerOf(form, '기간')
+  const distress = answerOf(form, DISTRESS_QUESTION)
+  const startTime = answerOf(form, START_TIME.question)
   const parts = [
+    distress && `힘든 정도를 5점 중 ${distress}점으로 답했`,
+    startTime && `시작 시기로 ‘${startTime}’을 골랐`,
     mood && `지금 기분을 5점 중 ${mood}점으로 답했`,
     duration && `고민이 ${duration} 이어졌다고 했`,
   ].filter(Boolean)

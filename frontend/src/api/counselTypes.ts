@@ -66,7 +66,7 @@ export type CounselCase = {
   updated_at: string
 }
 
-/** 상담 양식. 01번(양식) 확정 전이라 질문·답 목록으로 주고받는다. */
+/** 상담 양식. 주제와 질문·답 목록으로 주고받는다. */
 export type CounselForm = {
   topic: string
   answers: FormAnswer[]
