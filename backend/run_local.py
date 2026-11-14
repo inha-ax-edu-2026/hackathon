@@ -97,7 +97,7 @@ def main():
                 print("비교 화면:", url)
                 print("교사 확인함:", url + "teacher")
                 print("서류 초안 작업실:", url + "document-demo")
-                print("교사 접근키: backend/.env의 TEACHER_ACCESS_TOKEN 값 (브라우저에서 입력)")
+                print("교사 확인함·서류 작업실은 접속키 없이 열립니다.")
                 print("이 창을 유지하세요. 서버 종료: Ctrl+C")
                 if not args.no_browser:
                     webbrowser.open(url)

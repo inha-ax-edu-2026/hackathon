@@ -37,16 +37,16 @@ class SharedServerTests(unittest.TestCase):
         self.frontend = {"X-Frontend-Access": self.settings.frontend_access_token}
         self.teacher = {"X-Teacher-Key": self.settings.teacher_token}
 
-    def test_reverse_proxy_loopback_and_forwarded_headers_never_bypass_auth(self):
+    def test_shared_apis_work_without_access_keys(self):
         path = "/api/student/counsel/cases"
-        self.assertEqual(self.client.get(path).status_code, 403)
+        self.assertEqual(self.client.get(path).status_code, 200)
         forged = {"X-Forwarded-For": "127.0.0.1", "X-Forwarded-Host": "localhost"}
-        self.assertEqual(self.client.get(path, headers=forged).status_code, 403)
-        self.assertEqual(self.client.get(path, headers=self.teacher).status_code, 403)
+        self.assertEqual(self.client.get(path, headers=forged).status_code, 200)
+        self.assertEqual(self.client.get(path, headers=self.teacher).status_code, 200)
         self.assertEqual(self.client.get(path, headers=self.frontend).status_code, 200)
-        self.assertEqual(self.client.get("/api/teacher/document-drafts", headers=self.frontend).status_code, 401)
+        self.assertEqual(self.client.get("/api/teacher/document-drafts").status_code, 200)
         self.assertEqual(self.client.get("/api/teacher/document-drafts", headers=self.teacher).status_code, 200)
-        self.assertEqual(self.client.post("/api/demo/reset").status_code, 403)
+        self.assertEqual(self.client.post("/api/demo/reset").status_code, 200)
 
     def test_local_settings_and_legacy_comparison_are_inaccessible_even_with_keys(self):
         for method, path in [("GET", "/api/local/settings"), ("POST", "/api/local/settings"),
@@ -56,8 +56,9 @@ class SharedServerTests(unittest.TestCase):
             self.assertEqual(r.status_code, 404, path)
         schema = self.client.get("/openapi.json").json()
         self.assertFalse(any(p.startswith(("/api/local/", "/api/counsel/")) for p in schema["paths"]))
-        self.assertEqual(schema["components"]["securitySchemes"]["FrontendAccess"]["name"], "X-Frontend-Access")
-        self.assertEqual(schema["components"]["securitySchemes"]["TeacherAccess"]["name"], "X-Teacher-Key")
+        schemes = schema.get("components", {}).get("securitySchemes", {})
+        self.assertNotIn("FrontendAccess", schemes)
+        self.assertNotIn("TeacherAccess", schemes)
         self.assertIn("팀 API", self.client.get("/").text)
 
     def test_exact_https_origin_and_vercel_preflight_work_but_other_origin_fails(self):
@@ -69,7 +70,7 @@ class SharedServerTests(unittest.TestCase):
         r = self.client.post(path, json=body, headers={**self.frontend, "Origin": "https://other.example"})
         self.assertEqual(r.status_code, 403)
         r = self.client.options(path, headers={"Origin": "https://hackathon-tau-mocha.vercel.app",
-            "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "x-frontend-access,content-type"})
+            "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "content-type"})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.headers["access-control-allow-origin"], "https://hackathon-tau-mocha.vercel.app")
 
@@ -80,7 +81,7 @@ class SharedServerTests(unittest.TestCase):
                 self.assertNotIn(secret, r.text)
 
     def test_shared_configuration_fails_closed(self):
-        for changed in [{"frontend_access_token": ""}, {"teacher_token": ""}, {"public_base_url": ""},
+        for changed in [{"public_base_url": ""},
             {"public_base_url": "http://team.example"}, {"public_base_url": "https://team.example/path"},
             {"frontend_demo_enabled": False}, {"frontend_ai_mode": "baze", "api_key": ""}]:
             with self.subTest(changed=changed), self.assertRaises(ValueError):

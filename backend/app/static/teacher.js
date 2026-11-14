@@ -1,24 +1,18 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const teacherState = {key: '', generation: 0, timer: null, loading: false, reportID: null};
+const teacherState = {generation: 0, timer: null, loading: false, reportID: null};
 const labels = {quality: '고품질형', economy: '가성비형'};
 const kinds = {suicide: '생명·안전 관련 표현', self_harm: '자해 관련 표현', violence: '위협·폭력', bullying: '괴롭힘·따돌림', abuse: '학대 관련 표현', other: '기타 도움 신호'};
 function element(tag, className, text) { const n = document.createElement(tag); if (className) n.className = className; if (text !== undefined) n.textContent = text; return n; }
 function date(value) { return value ? new Date(value).toLocaleString('ko-KR') : '진행 중'; }
 function status(message, error = false) { $('teacherStatus').textContent = message; $('teacherStatus').classList.toggle('teacher-status-error', error); }
 async function api(path, method = 'GET') {
-  const response = await fetch('/api/teacher' + path, {method, headers: {'X-Teacher-Key': teacherState.key}});
+  const response = await fetch('/api/teacher' + path, {method});
   if (!response.ok) { const body = await response.json().catch(() => ({})); const error = new Error(typeof body.detail === 'string' ? body.detail : '기록을 불러오지 못했습니다.'); error.status = response.status; throw error; }
   return response.json();
 }
-function logout() {
-  teacherState.generation++; teacherState.key = ''; teacherState.reportID = null; clearInterval(teacherState.timer);
-  $('teacherKey').value = ''; $('loginForm').hidden = false; $('dashboard').hidden = true; $('logout').hidden = true; $('refresh').disabled = true;
-  $('reportList').replaceChildren(); $('conversationList').replaceChildren(); $('detailBody').replaceChildren(); $('recordDetail').hidden = true;
-  document.title = 'SAFE-PATH · 교사 확인함';
-}
 async function refresh() {
-  if (!teacherState.key || teacherState.loading) return;
+  if (teacherState.loading) return;
   const generation = teacherState.generation; teacherState.loading = true; $('refresh').disabled = true;
   try {
     const [reports, conversations] = await Promise.all([api('/reports'), api('/conversations')]);
@@ -42,13 +36,11 @@ async function refresh() {
     }
     if (!reports.items.length) $('reportList').append(element('p', 'teacher-empty', '등록된 교사 보고가 없습니다.'));
     if (!conversations.items.length) $('conversationList').append(element('p', 'teacher-empty', '저장된 상담이 없습니다.'));
-    $('loginForm').hidden = true; $('dashboard').hidden = false; $('logout').hidden = false;
     status(`${date(new Date().toISOString())} 갱신 · 3초마다 목록을 확인합니다. 보고함 등록과 교사의 실제 확인은 구분됩니다.`);
   } catch (error) {
     if (generation !== teacherState.generation) return;
-    if (error.status === 401) logout();
     status(error.message, true);
-  } finally { if (generation === teacherState.generation) { teacherState.loading = false; $('refresh').disabled = !teacherState.key; } else teacherState.loading = false; }
+  } finally { if (generation === teacherState.generation) { teacherState.loading = false; $('refresh').disabled = false; } else teacherState.loading = false; }
 }
 function renderDetail(record, report = null) {
   $('recordDetail').hidden = false; $('detailTitle').textContent = record.alias + ' · 상담 기록';
@@ -94,17 +86,13 @@ async function openConversation(id) {
   try { const record = await api('/conversations/' + encodeURIComponent(id)); if (generation === teacherState.generation) renderDetail(record); }
   catch (error) { if (generation === teacherState.generation) status(error.message, true); }
 }
-$('loginForm').addEventListener('submit', async event => {
-  event.preventDefault(); teacherState.key = $('teacherKey').value.trim(); $('teacherKey').value = ''; $('loginButton').disabled = true;
-  try { await refresh(); if (teacherState.key) { clearInterval(teacherState.timer); teacherState.timer = setInterval(refresh, 3000); } }
-  finally { $('loginButton').disabled = false; }
-});
 $('refresh').addEventListener('click', refresh);
-$('logout').addEventListener('click', () => { logout(); status('교사 접속을 종료했습니다. 저장된 상담 기록은 유지됩니다.'); });
+refresh();
+teacherState.timer = setInterval(refresh, 3000);
 $('acknowledge').addEventListener('click', async () => {
   const id = teacherState.reportID; if (!id) return; $('acknowledge').disabled = true;
   try { await api('/reports/' + encodeURIComponent(id) + '/acknowledge', 'POST'); await refresh(); await openReport(id); }
   catch (error) { status(error.message, true); }
   finally { $('acknowledge').disabled = false; }
 });
-window.addEventListener('beforeunload', () => { clearInterval(teacherState.timer); teacherState.key = ''; });
+window.addEventListener('beforeunload', () => { clearInterval(teacherState.timer); });

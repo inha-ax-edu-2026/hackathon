@@ -5,13 +5,14 @@ import hashlib
 import json
 import os
 import re
-import secrets
 import socket
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.request
+import webbrowser
+from urllib.parse import urlencode
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -33,8 +34,6 @@ def prepare():
     RUNTIME.mkdir(parents=True, exist_ok=True)
     values = dict(dotenv_values(SHARED_ENV, encoding="utf-8-sig"))
     defaults = {
-        "FRONTEND_ACCESS_TOKEN": secrets.token_urlsafe(32),
-        "TEACHER_ACCESS_TOKEN": secrets.token_urlsafe(32),
         "COUNSEL_DATABASE_PATH": "data/shared.sqlite3",
         "FRONTEND_AI_MODE": "baze",
     }
@@ -43,8 +42,6 @@ def prepare():
             set_key(str(SHARED_ENV), name, default, quote_mode="always")
             values[name] = default
     # 주소는 새 터널을 열 때마다 바뀐다. 이전 주소로 서버를 먼저 열지 않는다.
-    from dataclasses import replace
-    replace(settings, frontend_access_token=values["FRONTEND_ACCESS_TOKEN"], teacher_token=values["TEACHER_ACCESS_TOKEN"])
     return values
 
 
@@ -105,17 +102,15 @@ def public_checks(url, values):
     if status != 200 or body.get("shared_server_mode") is not True:
         return False
     path = url + "/api/student/counsel/cases"
-    if request(path)[0] != 403:
-        return False
-    if request(path, {"X-Frontend-Access": values["FRONTEND_ACCESS_TOKEN"]})[0] != 200:
-        return False
-    return request(url + "/api/teacher/document-drafts", {"X-Teacher-Key": values["TEACHER_ACCESS_TOKEN"]})[0] == 200
+    return request(path)[0] == 200 and request(url + "/api/teacher/document-drafts")[0] == 200
+
 
 
 def main():
     parser = argparse.ArgumentParser(description="SAFE-PATH 팀 테스트용 HTTPS 서버")
     parser.add_argument("--port", type=int, default=8001)
-    parser.add_argument("--prepare-only", action="store_true", help="키 파일만 준비하고 서버·터널을 열지 않음")
+    parser.add_argument("--prepare-only", action="store_true", help="설정만 준비하고 서버·터널을 열지 않음")
+    parser.add_argument("--no-browser", action="store_true", help="프론트 화면을 자동으로 열지 않음")
     args = parser.parse_args()
     if not 1024 <= args.port <= 65535 or args.port == 8000:
         parser.error("기존 로컬 서버와 다른 포트(기본 8001)를 사용하세요.")
@@ -125,7 +120,7 @@ def main():
     try:
         values = prepare()
         if args.prepare_only:
-            print("공유 서버 설정 준비 완료. 접속키 위치: backend/.env.shared (값은 출력하지 않음)")
+            print("공유 서버 설정 준비 완료. 별도 접속키 없이 테스트할 수 있습니다.")
             return 0
         # 현재 환경의 소켓 차단을 먼저 확인한다. 보안 설정은 변경하지 않는다.
         with socket.socket() as listener:
@@ -183,16 +178,20 @@ def main():
                         break
                     time.sleep(1)
                 if not verified:
-                    raise ValueError("공개 주소의 인증 검증에 실패했습니다. 서버·터널을 종료합니다. 로그를 확인하세요.")
-                status_file.write_text(json.dumps({"url": public_url, "https_verified": True,
+                    raise ValueError("공개 주소의 API 응답 검증에 실패했습니다. 서버·터널을 종료합니다. 로그를 확인하세요.")
+                frontend_url = "https://hackathon-tau-mocha.vercel.app/?" + urlencode({"backend": public_url})
+                status_file.write_text(json.dumps({"url": public_url, "frontend_url": frontend_url, "https_verified": True,
                     "started_at": datetime.now(timezone.utc).isoformat(), "running": True}, indent=2), encoding="utf-8")
                 status_written = True
                 print("\n공유 서버:", public_url, flush=True)
+                print("프론트 테스트:", frontend_url, flush=True)
                 print("API 테스트:", public_url + "/docs", flush=True)
                 print("서류 작업실:", public_url + "/document-demo", flush=True)
-                print("접속키 위치: backend/.env.shared — 별도 전달, Git·공개 URL·VITE_*에 넣지 마세요.", flush=True)
-                print("공개 HTTPS와 미인증 차단·프론트키·교사키 확인 완료. AI 추론은 이 점검에서 호출하지 않았습니다.", flush=True)
+                print("프론트 연동키·교사 접속키 입력 없이 바로 사용할 수 있습니다.", flush=True)
+                print("공개 HTTPS와 상담·서류 API 응답 확인 완료. AI 추론은 이 점검에서 호출하지 않았습니다.", flush=True)
                 print("이 창과 PC를 켜두세요. 종료는 Ctrl+C. 다음 실행 시 주소가 바뀝니다.", flush=True)
+                if not args.no_browser:
+                    webbrowser.open(frontend_url)
                 while server.poll() is None and tunnel.poll() is None:
                     time.sleep(0.5)
                 raise ValueError("서버 또는 터널이 종료됐습니다. 다시 실행하세요.")

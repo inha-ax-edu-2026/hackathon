@@ -7,7 +7,7 @@
 1. 이전 서버가 실행 중이면 해당 창에서 Ctrl+C로 종료한다.
 2. `backend/start_local.cmd`를 실행하거나 `backend`에서 `python run_local.py`를 실행한다.
 3. 상담 화면은 `http://127.0.0.1:8000/`, 교사 화면은 `http://127.0.0.1:8000/teacher`를 연다.
-4. 서버 시작 후 `backend/.env`의 `TEACHER_ACCESS_TOKEN` 값을 교사 접속키 입력란에 넣는다. 이 값은 BAZE API 키와 다르며 비어 있으면 서버가 자동 생성한다. 수동 설정 시 16자 이상을 사용하고 서버를 재시작한다.
+4. 교사 확인함은 접속키 없이 바로 열린다. 서버가 별도 접속키를 생성하지 않는다.
 5. 학생 화면에서 데모 모드를 고르고 대화 보관·자동 보고 안내에 동의한 뒤 상담을 시작한다. 실제 BAZE 모드에서도 같은 저장·보고 규칙을 사용한다.
 
 교사키는 교사에게만 공유한다. 학생 세션 토큰으로는 교사 API를 조회할 수 없다. 교사 화면은 키를 브라우저 메모리에만 보관하며 로그아웃·새로고침 시 다시 입력해야 한다. 키·DB 파일·실제 상담 데이터는 Git에 올리지 않는다.
@@ -70,7 +70,7 @@
 
 ## API 계약
 
-최신 계약은 서버의 `/openapi.json`이다. 학생 요청은 `X-Session-Token`, 교사 요청은 `X-Teacher-Key`를 사용한다.
+최신 계약은 서버의 `/openapi.json`이다. 개별 상담 세션은 내부 `X-Session-Token`을 유지하며, 교사 요청에는 별도 접속키가 필요 없다.
 
 - 세션 생성: `POST /api/counsel/sessions`에 `mode`, `consent:true`, `notice_version:"archive-report-v1"`을 보낸다. 이전 저장 없는 동의 형식은 거절한다.
 - 선검사: `POST /api/counsel/sessions/{sid}/safety`에 `text`, `request_id`를 보낸다. 같은 발언으로 모델 호출 시 동일한 `request_id`를 재사용한다.

@@ -1,4 +1,6 @@
-const ENV_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '')
+const DEFAULT_BACKEND_URL = 'https://style-sale-trailer-steve.trycloudflare.com'
+const MOCK_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '')
+const ENV_BASE_URL = MOCK_BASE_URL || DEFAULT_BACKEND_URL
 const STORAGE_KEY = 'safepath.backend.connection'
 
 export class ApiError extends Error {
@@ -19,7 +21,6 @@ type ApiFetchOptions = Omit<RequestInit, 'body'> & {
   body?: unknown
 }
 
-type Credentials = { frontendKey: string; teacherKey: string }
 export type BackendConnection = {
   mode: 'mock' | 'backend'
   baseUrl: string
@@ -27,11 +28,10 @@ export type BackendConnection = {
   aiMode?: string
   model?: string
   revision?: number
+  error?: string
 }
 export type ConnectBackendInput = {
   baseUrl: string
-  frontendKey: string
-  teacherKey?: string
 }
 type Health = {
   status: string
@@ -65,23 +65,35 @@ function normalizeBaseUrl(value: string) {
 }
 
 function initialConnection(): BackendConnection {
-  const mock =
-    import.meta.env.VITE_USE_MOCK === 'true' ||
-    (import.meta.env.VITE_USE_MOCK !== 'false' && !ENV_BASE_URL)
+  const preset =
+    typeof location === 'undefined' ? null : new URLSearchParams(location.search).get('backend')
+  if (preset) {
+    try {
+      const baseUrl = normalizeBaseUrl(preset)
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ mode: 'backend', baseUrl }))
+      } catch {
+        /* 현재 탭은 계속 사용한다. */
+      }
+      return { mode: 'backend', baseUrl, ready: false }
+    } catch {
+      /* 잘못된 링크는 저장된 주소나 기본값을 사용한다. */
+    }
+  }
   try {
-    const stored = JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? 'null')
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')
     if (stored?.mode === 'backend') {
       return { mode: 'backend', baseUrl: normalizeBaseUrl(stored.baseUrl), ready: false }
     }
-    if (stored?.mode === 'mock') return { mode: 'mock', baseUrl: ENV_BASE_URL, ready: true }
+    if (stored?.mode === 'mock')
+      return { mode: 'mock', baseUrl: stored.baseUrl || ENV_BASE_URL, ready: true }
   } catch {
-    // 저장소가 차단되어도 환경변수로 시작한다. 접속키는 저장소에서 읽지 않는다.
+    // 저장소가 차단되어도 기본 서버 주소로 시작한다.
   }
-  return { mode: mock ? 'mock' : 'backend', baseUrl: ENV_BASE_URL, ready: mock }
+  return { mode: 'backend', baseUrl: ENV_BASE_URL, ready: false }
 }
 
 let connection = initialConnection()
-let credentials: Credentials = { frontendKey: '', teacherKey: '' }
 let revision = 0
 let switching = false
 let mockController: (enabled: boolean) => Promise<void> = async () => {}
@@ -109,40 +121,20 @@ export function subscribeBackendConnection(listener: () => void) {
   }
 }
 
-function publish(next: BackendConnection, keys: Credentials) {
+function publish(next: BackendConnection) {
   resetConnectionCache()
   revision += 1
   connection = { ...next, revision }
-  credentials = keys
   try {
-    // 주소와 모드만 기억한다. 키는 현재 탭 메모리에만 둔다.
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ mode: next.mode, baseUrl: next.baseUrl }))
+    // 공개 서버 주소와 실행 모드만 기억한다. 인증 정보는 저장하지 않는다.
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ mode: next.mode, baseUrl: next.baseUrl }))
   } catch {
     /* 저장소 없이도 현재 연결을 유지한다. */
   }
   for (const listener of listeners) listener()
 }
 
-function authHeaders(path: string, keys: Credentials) {
-  const headers = new Headers()
-  if (
-    path.startsWith('/api/student/counsel/') ||
-    path.startsWith('/api/teacher/counsel/') ||
-    path === '/api/demo/reset'
-  ) {
-    if (keys.frontendKey) headers.set('X-Frontend-Access', keys.frontendKey)
-  } else if (path.startsWith('/api/teacher/') && keys.teacherKey) {
-    headers.set('X-Teacher-Key', keys.teacherKey)
-  }
-  return headers
-}
-
-async function requestJson<T>(
-  baseUrl: string,
-  path: string,
-  options: ApiFetchOptions,
-  keys: Credentials,
-): Promise<T> {
+async function requestJson<T>(baseUrl: string, path: string, options: ApiFetchOptions): Promise<T> {
   const parsed = new URL(path, 'https://api.invalid')
   if (
     ((!path.startsWith('/api/') || !parsed.pathname.startsWith('/api/')) && path !== '/health') ||
@@ -159,9 +151,6 @@ async function requestJson<T>(
   if (body !== undefined) headers.set('Content-Type', 'application/json')
   headers.delete('X-Frontend-Access')
   headers.delete('X-Teacher-Key')
-  authHeaders(path, keys).forEach((value, name) => {
-    headers.set(name, value)
-  })
   const signal = options.signal ?? AbortSignal.timeout(path === '/health' ? 10000 : 90000)
   let response: Response
   let text: string
@@ -196,7 +185,7 @@ async function requestJson<T>(
     if (response.status === 401 || response.status === 403) {
       throw new ApiError(response.status, {
         detail:
-          '접속키 또는 허용된 프론트 주소를 확인해 주세요. 연결 설정에서 다시 입력할 수 있어요.',
+          '백엔드가 이전 코드이거나 허용되지 않은 출처입니다. 서버를 최신 코드로 재시작해 주세요.',
       })
     }
     throw new ApiError(response.status, data)
@@ -204,29 +193,15 @@ async function requestJson<T>(
   return data as T
 }
 
-/** 상태·연동키만 확인한다. 유료 추론과 데이터 쓰기는 하지 않는다. */
+/** 서버 계약만 확인한다. 접속키와 유료 AI 호출은 필요하지 않다. */
 export async function connectBackend(input: ConnectBackendInput) {
   if (switching) throw new ApiError(409, { detail: '서버 연결을 확인 중입니다.' })
   const baseUrl = normalizeBaseUrl(input.baseUrl)
-  const sameServer = connection.mode === 'backend' && connection.baseUrl === baseUrl
-  const keys = {
-    frontendKey: input.frontendKey.trim() || (sameServer ? credentials.frontendKey : ''),
-    teacherKey: input.teacherKey?.trim() || (sameServer ? credentials.teacherKey : ''),
-  }
-  if (!keys.frontendKey) throw new ApiError(0, { detail: '프론트 연동키를 입력해 주세요.' })
-  if (
-    !/^[!-~]{24,4096}$/.test(keys.frontendKey) ||
-    (keys.teacherKey && !/^[!-~]{16,4096}$/.test(keys.teacherKey))
-  ) {
-    throw new ApiError(0, {
-      detail: '접속키 형식을 확인해 주세요. 따옴표와 줄바꿈 없이 값만 입력합니다.',
-    })
-  }
   const previousMode = connection.mode
   switching = true
   try {
     await mockController(false)
-    const health = await requestJson<Health>(baseUrl, '/health', {}, keys)
+    const health = await requestJson<Health>(baseUrl, '/health', {})
     if (
       health?.status !== 'ok' ||
       health.integration_contract !== 'document-demo-v1' ||
@@ -236,25 +211,16 @@ export async function connectBackend(input: ConnectBackendInput) {
         detail: '프론트 상담 API가 켜진 최신 SAFE-PATH 백엔드인지 확인해 주세요.',
       })
     }
-    const list = await requestJson<{ cases: unknown[] }>(
-      baseUrl,
-      '/api/student/counsel/cases',
-      {},
-      keys,
-    )
+    const list = await requestJson<{ cases: unknown[] }>(baseUrl, '/api/student/counsel/cases', {})
     if (!Array.isArray(list?.cases))
       throw new ApiError(502, { detail: '상담 목록 응답 형식이 맞지 않아요.' })
-    if (keys.teacherKey) await requestJson(baseUrl, '/api/teacher/reports', {}, keys)
-    publish(
-      {
-        mode: 'backend',
-        baseUrl,
-        ready: true,
-        aiMode: health.frontend_ai_mode,
-        model: health.quality_model,
-      },
-      keys,
-    )
+    publish({
+      mode: 'backend',
+      baseUrl,
+      ready: true,
+      aiMode: health.frontend_ai_mode,
+      model: health.quality_model,
+    })
     return health
   } catch (error) {
     await mockController(previousMode === 'mock')
@@ -267,14 +233,11 @@ export async function connectBackend(input: ConnectBackendInput) {
 export async function selectMockBackend() {
   if (switching) throw new ApiError(409, { detail: '서버 연결을 확인 중입니다.' })
   await mockController(true)
-  publish({ mode: 'mock', baseUrl: ENV_BASE_URL, ready: true }, { frontendKey: '', teacherKey: '' })
+  publish({ mode: 'mock', baseUrl: connection.baseUrl || ENV_BASE_URL, ready: true })
 }
 
-export function requireBackendConnection() {
-  publish(
-    { mode: 'backend', baseUrl: ENV_BASE_URL, ready: false },
-    { frontendKey: '', teacherKey: '' },
-  )
+export function requireBackendConnection(error?: string) {
+  publish({ mode: 'backend', baseUrl: connection.baseUrl || ENV_BASE_URL, ready: false, error })
 }
 
 /** queryFn·mutationFn에서 사용하는 공통 API 호출. */
@@ -282,10 +245,14 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   if (switching) throw new ApiError(409, { detail: '서버 연결을 확인 중입니다.' })
   if (!connection.ready)
     throw new ApiError(401, {
-      detail: '연결 설정에서 백엔드 주소와 프론트 연동키를 입력해 주세요.',
+      detail: '백엔드에 연결할 수 없습니다. 서버 실행 상태와 주소를 확인해 주세요.',
     })
   const started = revision
-  const data = await requestJson<T>(connection.baseUrl, path, options, credentials)
+  const data = await requestJson<T>(
+    connection.mode === 'mock' ? MOCK_BASE_URL : connection.baseUrl,
+    path,
+    options,
+  )
   if (started !== revision)
     throw new ApiError(409, { detail: '서버 연결이 변경되어 이전 응답을 사용하지 않았어요.' })
   return data

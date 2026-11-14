@@ -33,18 +33,14 @@ function ConnectionForm({ onConnected }: { onConnected?: () => void }) {
   const connection = useBackendConnection()
   const queryClient = useQueryClient()
   const [baseUrl, setBaseUrl] = useState(connection.baseUrl)
-  const [frontendKey, setFrontendKey] = useState('')
-  const [teacherKey, setTeacherKey] = useState('')
   const id = useId()
   const mutation = useMutation({
     mutationFn: async (mode: 'backend' | 'mock') => {
       await queryClient.cancelQueries()
       if (mode === 'mock') await selectMockBackend()
-      else await connectBackend({ baseUrl, frontendKey, teacherKey })
+      else await connectBackend({ baseUrl })
     },
     onSuccess: () => {
-      setFrontendKey('')
-      setTeacherKey('')
       onConnected?.()
     },
     onError: () => queryClient.invalidateQueries(),
@@ -70,49 +66,12 @@ function ConnectionForm({ onConnected }: { onConnected?: () => void }) {
           disabled={mutation.isPending}
         />
       </div>
-      <div className="space-y-2">
-        <label htmlFor={`${id}-frontend`} className="text-sm font-medium">
-          프론트 연동키
-        </label>
-        <Input
-          id={`${id}-frontend`}
-          type="password"
-          value={frontendKey}
-          onChange={(e) => setFrontendKey(e.target.value)}
-          placeholder={
-            connection.ready && connection.mode === 'backend'
-              ? '같은 서버는 비워두면 기존 키 유지'
-              : 'FRONTEND_ACCESS_TOKEN 값'
-          }
-          autoComplete="off"
-          spellCheck={false}
-          maxLength={4096}
-          disabled={mutation.isPending}
-        />
-      </div>
-      <div className="space-y-2">
-        <label htmlFor={`${id}-teacher`} className="text-sm font-medium">
-          교사 접속키 <span className="text-muted-foreground">(선택)</span>
-        </label>
-        <Input
-          id={`${id}-teacher`}
-          type="password"
-          value={teacherKey}
-          onChange={(e) => setTeacherKey(e.target.value)}
-          placeholder="TEACHER_ACCESS_TOKEN 값"
-          autoComplete="off"
-          spellCheck={false}
-          maxLength={4096}
-          disabled={mutation.isPending}
-        />
-      </div>
       <p className="text-sm text-muted-foreground">
-        접속키는 담당자가 별도로 전달한 값을 입력하세요. BAZE API 키를 넣는 곳이 아닙니다. 현재 탭
-        메모리에만 두며 새로고침·새 탭에서는 다시 입력합니다.
+        서버 주소는 미리 설정되어 있습니다. 주소가 바뀌었을 때만 수정하세요. 접속키는 필요하지
+        않습니다.
       </p>
       <p className="text-sm text-muted-foreground">
-        가상 학생 자료로 테스트하세요. 연결 확인은 AI를 호출하지 않습니다. 연결 후 상담 전송에는
-        서버 설정에 따라 API 사용량이 발생합니다.
+        가상 학생 자료로 테스트하세요. 연결 확인은 AI를 호출하지 않습니다.
       </p>
       {mutation.isError && (
         <p role="alert" className="text-sm text-destructive">
@@ -163,7 +122,7 @@ export function BackendConnectionButton() {
   )
 }
 
-/** 접속키 입력 전에는 상담 화면을 마운트하지 않아 미인증 폴링을 막는다. */
+/** 서버 연결이 확인된 뒤 상담 화면을 연다. */
 export function BackendConnectionGate({ children }: { children: ReactNode }) {
   const connection = useBackendConnection()
   if (connection.ready) return <Fragment key={connection.revision ?? 0}>{children}</Fragment>
@@ -171,7 +130,10 @@ export function BackendConnectionGate({ children }: { children: ReactNode }) {
     <main className="mx-auto my-12 max-w-lg space-y-6 rounded-xl border bg-card p-6 text-foreground">
       <div className="space-y-2">
         <h1 className="text-xl font-bold">시연 백엔드 연결</h1>
-        <p className="text-muted-foreground">서버 주소와 접속키를 확인한 뒤 상담 화면을 엽니다.</p>
+        <p className="text-muted-foreground">
+          {connection.error ||
+            '설정된 서버에 연결하지 못했습니다. 서버 실행 상태를 확인하거나 가상 시연을 선택하세요.'}
+        </p>
       </div>
       <ConnectionForm />
     </main>
