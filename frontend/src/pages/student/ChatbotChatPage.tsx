@@ -194,9 +194,7 @@ function ChatbotChatPage() {
               }
             >
               {pendingText && (
-                <MessageBubble
-                  message={{ id: 'pending', role: 'student', text: pendingText, at: '' }}
-                />
+                <MessageBubble message={{ id: 'pending', role: 'student', text: pendingText }} />
               )}
               {pendingText && <TypingIndicator />}
             </MessageList>

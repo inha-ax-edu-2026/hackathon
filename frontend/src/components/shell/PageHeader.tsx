@@ -10,10 +10,17 @@ type PageHeaderProps = {
   back?: ReactNode
   /** 오른쪽 주 버튼 자리 */
   actions?: ReactNode
+  showConnection?: boolean
 }
 
 /** 셸 페이지의 흰 헤더: 제목(20px/700) · 설명 · 오른쪽 주 버튼 · 고정 신원. */
-export function PageHeader({ title, description, back, actions }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  description,
+  back,
+  actions,
+  showConnection = true,
+}: PageHeaderProps) {
   const shell = useShell()
   return (
     <header className="border-b bg-background px-8 pt-5 pb-6 print:hidden">
@@ -21,7 +28,7 @@ export function PageHeader({ title, description, back, actions }: PageHeaderProp
         <div className="text-muted-foreground">{back}</div>
         <div className="flex items-center gap-3">
           {shell && <span className="text-secondary-foreground">{shell.identity}</span>}
-          <BackendConnectionButton />
+          {showConnection && <BackendConnectionButton />}
         </div>
       </div>
       <div className="flex items-end justify-between gap-4">

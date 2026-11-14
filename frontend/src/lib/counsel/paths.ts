@@ -6,3 +6,7 @@ export const CHATBOT_FORM_PATH = `${STUDENT_SCHOOL_VIOLENCE_PATH}/chatbot/new`
 export const COUNSEL_REGISTER_PATH = `${STUDENT_SCHOOL_VIOLENCE_PATH}/register`
 /** AI 챗봇 상담(대화 또는 읽기 전용) */
 export const chatbotPath = (id: string) => `${STUDENT_SCHOOL_VIOLENCE_PATH}/chatbot/${id}`
+
+export const PARENT_SCHOOL_VIOLENCE_PATH = '/parent/school-violence'
+export const PARENT_CHATBOT_NEW_PATH = `${PARENT_SCHOOL_VIOLENCE_PATH}/chatbot/new`
+export const parentChatbotPath = (id: string) => `${PARENT_SCHOOL_VIOLENCE_PATH}/chatbot/${id}`

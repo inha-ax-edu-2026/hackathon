@@ -4,7 +4,6 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
 import './index.css'
-import { BackendConnectionGate } from '@/components/counsel/BackendConnection.tsx'
 import {
   connectBackend,
   getBackendConnection,
@@ -32,14 +31,6 @@ async function setMocking(enabled: boolean) {
 
 registerMockController(setMocking)
 registerConnectionReset(() => queryClient.clear())
-try {
-  const initial = getBackendConnection()
-  if (initial.mode === 'mock') await setMocking(true)
-  else await connectBackend({ baseUrl: initial.baseUrl })
-} catch (error) {
-  requireBackendConnection(error instanceof Error ? error.message : undefined)
-}
-
 // 다른 서버의 상담 ID를 그대로 요청하지 않도록 연결 변경 시 목록으로 돌아간다.
 let previousConnection = getBackendConnection()
 subscribeBackendConnection(() => {
@@ -52,12 +43,23 @@ subscribeBackendConnection(() => {
   previousConnection = next
 })
 
+const initial = getBackendConnection()
+if (initial.mode === 'mock') {
+  try {
+    await setMocking(true)
+  } catch (error) {
+    requireBackendConnection(error instanceof Error ? error.message : undefined)
+  }
+} else {
+  void connectBackend({ baseUrl: initial.baseUrl }).catch((error: unknown) => {
+    requireBackendConnection(error instanceof Error ? error.message : undefined)
+  })
+}
+
 createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BackendConnectionGate>
-        <RouterProvider router={router} />
-      </BackendConnectionGate>
+      <RouterProvider router={router} />
       {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   </StrictMode>,

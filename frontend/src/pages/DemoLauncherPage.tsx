@@ -1,4 +1,4 @@
-import { ExternalLink, GraduationCap, Presentation, RotateCcw } from 'lucide-react'
+import { ExternalLink, GraduationCap, Presentation, RotateCcw, UsersRound } from 'lucide-react'
 import { useResetDemo } from '@/api/demo.ts'
 import {
   BackendConnectionButton,
@@ -14,6 +14,12 @@ const SCREENS = [
     hint: '학폭 상담 → AI 챗봇 상담',
   },
   {
+    label: '학부모 화면 열기',
+    to: '/parent',
+    icon: UsersRound,
+    hint: '학폭 상담 → FAQ 챗봇 상담',
+  },
+  {
     label: '교사 화면 열기',
     to: '/teacher',
     icon: Presentation,
@@ -21,7 +27,7 @@ const SCREENS = [
   },
 ]
 
-/** 시연 런처(`/`). 발표자가 학생·교사 화면을 새 탭으로 열고, 시연 상태를 시드로 되돌린다. */
+/** 시연 런처(`/`). 발표자가 학생·학부모·교사 화면을 새 탭으로 열고, 시연 상태를 시드로 되돌린다. */
 function DemoLauncherPage() {
   const reset = useResetDemo()
   const connection = useBackendConnection()
@@ -30,26 +36,30 @@ function DemoLauncherPage() {
     <section className="mx-auto flex max-w-xl flex-col gap-6 py-12">
       <div className="space-y-1">
         <h1 className="text-xl font-bold">AI 챗봇 상담 시연</h1>
-        <p className="text-muted-foreground">
-          학생 화면과 교사 화면을 각각 새 탭으로 열어 나란히 띄워 주세요.
-        </p>
+        <p className="text-muted-foreground">시연할 화면을 새 탭으로 열어요.</p>
       </div>
 
       <div className="flex items-center justify-between gap-3 rounded-xl border bg-card p-5">
         <div className="space-y-1">
           <p className="font-semibold">
-            {connection.mode === 'mock' ? '가상 시연 데이터 사용 중' : '백엔드 연결됨'}
+            {connection.mode === 'mock'
+              ? '가상 시연 데이터 사용 중'
+              : connection.ready
+                ? '백엔드 연결됨'
+                : '백엔드 미연결'}
           </p>
           <p className="break-all text-sm text-muted-foreground">
-            {connection.mode === 'backend'
-              ? `${connection.baseUrl} · ${connection.aiMode === 'baze' ? connection.model : '서버 모의 응답'}`
-              : '실제 API 연결은 연결 설정에서 선택하세요.'}
+            {connection.mode === 'mock'
+              ? '실제 API 연결은 연결 설정에서 선택하세요.'
+              : connection.ready
+                ? `${connection.baseUrl} · ${connection.aiMode === 'baze' ? connection.model : '서버 모의 응답'}`
+                : '학생·교사 시연은 연결 설정에서 가상 시연을 선택할 수 있어요.'}
           </p>
         </div>
         <BackendConnectionButton />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         {SCREENS.map(({ label, to, icon: Icon, hint }) => (
           <a
             key={to}
@@ -75,8 +85,9 @@ function DemoLauncherPage() {
             상담과 사안 데이터를 시연 시작 상태로 되돌려요. 열린 탭에도 잠시 뒤 반영돼요.
           </p>
           <p role="status" className="min-h-5 text-success">
-            {reset.isSuccess && '초기화했어요.'}
-            {reset.isError && <span className="text-destructive">초기화하지 못했어요.</span>}
+            {reset.isSuccess &&
+              (reset.data === 'parent' ? '학부모 대화를 초기화했어요.' : '초기화했어요.')}
+            {reset.isError && <span className="text-destructive">{reset.error.message}</span>}
           </p>
         </div>
         <Button variant="outline" onClick={() => reset.mutate()} disabled={reset.isPending}>
