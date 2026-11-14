@@ -6,6 +6,7 @@ import { RouterProvider } from 'react-router'
 import './index.css'
 import { BackendConnectionGate } from '@/components/counsel/BackendConnection.tsx'
 import {
+  connectBackend,
   getBackendConnection,
   registerConnectionReset,
   registerMockController,
@@ -18,6 +19,7 @@ import { router } from '@/router.tsx'
 
 const rootElement = document.getElementById('root')
 if (!rootElement) throw new Error('#root 요소를 찾을 수 없습니다.')
+rootElement.textContent = '상담 화면을 준비하고 있습니다…'
 
 let stopMocking = () => {}
 async function setMocking(enabled: boolean) {
@@ -33,9 +35,11 @@ async function setMocking(enabled: boolean) {
 registerMockController(setMocking)
 registerConnectionReset(() => queryClient.clear())
 try {
-  await setMocking(getBackendConnection().mode === 'mock')
-} catch {
-  requireBackendConnection()
+  const initial = getBackendConnection()
+  if (initial.mode === 'mock') await setMocking(true)
+  else await connectBackend({ baseUrl: initial.baseUrl })
+} catch (error) {
+  requireBackendConnection(error instanceof Error ? error.message : undefined)
 }
 
 // 다른 서버의 상담 ID를 그대로 요청하지 않도록 연결 변경 시 목록으로 돌아간다.
