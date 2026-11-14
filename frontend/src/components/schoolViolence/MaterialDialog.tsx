@@ -24,7 +24,7 @@ export function MaterialDialog({ material, highlight, onClose }: MaterialDialogP
         <DialogHeader>
           <DialogTitle>{material?.title}</DialogTitle>
           <DialogDescription>
-            {material && MATERIAL_KIND_LABEL[material.kind]} 원문 · 가상 사례
+            {material && MATERIAL_KIND_LABEL[material.kind]} 원문
           </DialogDescription>
         </DialogHeader>
         <pre className="min-h-0 overflow-y-auto rounded-lg bg-muted/50 p-4 font-sans text-sm leading-relaxed whitespace-pre-wrap">

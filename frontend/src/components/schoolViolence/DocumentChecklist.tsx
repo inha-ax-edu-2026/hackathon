@@ -2,7 +2,6 @@ import { ListChecks, Lock } from 'lucide-react'
 import { Link } from 'react-router'
 import type { SchoolViolenceDocumentSummary } from '@/api/schoolViolenceTypes.ts'
 import { DetailCard } from '@/components/counsel/detail/DetailCard.tsx'
-import { EffectCounts, sumCounts } from '@/components/schoolViolence/EffectCounts.tsx'
 import { Badge } from '@/components/ui/badge.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { getFormLayout } from '@/lib/schoolViolence/forms/index.ts'
@@ -24,7 +23,6 @@ export function DocumentChecklist({
   caseId: string
   documents: SchoolViolenceDocumentSummary[]
 }) {
-  const total = sumCounts(documents.map((doc) => doc.counts))
   return (
     <DetailCard
       title="공통 단계 서류 9종"
@@ -34,7 +32,6 @@ export function DocumentChecklist({
       }
     >
       <div className="space-y-5">
-        {total.total > 0 && <EffectCounts counts={total} />}
         {STAGES.map((stage) => {
           const docs = documents.filter((doc) => doc.stage === stage)
           return (

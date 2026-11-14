@@ -29,7 +29,6 @@ type PrintMarksProps = {
 
 /**
  * 인쇄물에만 보이는 표시. 화면에서는 숨겨진다.
- * - 가상 사례 표시: 시연용 가상 사안임을 남긴다.
  * - 초안 표시: 승인 전 서류가 공식 서류로 오해되지 않게 「초안」을 단다.
  * 첫 쪽은 이 컴포넌트가, 둘째 쪽부터는 `print.css`의 쪽 여백 상자가 같은 표시를 단다.
  */
@@ -43,17 +42,13 @@ export function PrintMarks({ approved }: PrintMarksProps) {
     }
   }, [approved])
 
+  if (approved) return null
+
   return (
-    <div
-      aria-hidden
-      className="hidden items-start justify-between gap-4 text-[10px] leading-snug text-black/70 print:flex"
-    >
-      <p>가상 사례 · 시연을 위해 만든 가상의 사안이에요. 실제와 관련이 없어요.</p>
-      {!approved && (
-        <span className="shrink-0 rounded-sm border border-black/70 px-2 py-1 text-[11px] font-bold tracking-widest text-black">
-          초안
-        </span>
-      )}
+    <div aria-hidden className="hidden justify-end print:flex">
+      <span className="rounded-sm border border-black/70 px-2 py-1 text-[11px] font-bold tracking-widest text-black">
+        초안
+      </span>
     </div>
   )
 }

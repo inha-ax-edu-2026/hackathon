@@ -4,7 +4,6 @@ import { useSchoolViolenceCase } from '@/api/schoolViolence.ts'
 import { CaseInfoCard } from '@/components/schoolViolence/CaseInfoCard.tsx'
 import { DocumentChecklist } from '@/components/schoolViolence/DocumentChecklist.tsx'
 import { MaterialsCard } from '@/components/schoolViolence/MaterialsCard.tsx'
-import { VirtualCaseBanner } from '@/components/schoolViolence/VirtualCaseBanner.tsx'
 import { PageBody, PageHeader } from '@/components/shell/PageHeader.tsx'
 import { Badge } from '@/components/ui/badge.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.tsx'
@@ -84,7 +83,6 @@ function SchoolViolenceCasePage() {
         }
       />
       <PageBody>
-        <VirtualCaseBanner />
         <Tabs
           value={activeTab}
           onValueChange={(tab) => {

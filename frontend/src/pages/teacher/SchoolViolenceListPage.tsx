@@ -1,7 +1,6 @@
 import { Link } from 'react-router'
 import { useSchoolViolenceCases } from '@/api/schoolViolence.ts'
 import { SchoolViolenceCaseTable } from '@/components/schoolViolence/SchoolViolenceCaseTable.tsx'
-import { VirtualCaseBanner } from '@/components/schoolViolence/VirtualCaseBanner.tsx'
 import { PageBody, PageHeader } from '@/components/shell/PageHeader.tsx'
 import { TEACHER_COUNSEL_PATH } from '@/lib/counsel/paths.ts'
 
@@ -34,10 +33,7 @@ function SchoolViolenceListPage() {
             </p>
           </section>
         ) : (
-          <>
-            <VirtualCaseBanner />
-            <SchoolViolenceCaseTable cases={cases} />
-          </>
+          <SchoolViolenceCaseTable cases={cases} />
         )}
       </PageBody>
     </>
