@@ -12,7 +12,7 @@ import { STAGE_LABEL } from '@/lib/schoolViolence/labels.ts'
 import {
   INFO_EDIT_PARAM,
   INFO_EDIT_VALUE,
-  SCHOOL_VIOLENCE_PATH,
+  SCHOOL_VIOLENCE_CASES_PATH,
 } from '@/lib/schoolViolence/paths.ts'
 
 const CASE_TABS = [
@@ -33,7 +33,7 @@ function SchoolViolenceCasePage() {
     : (CASE_TABS.find(({ value }) => value === requestedTab)?.value ?? 'info')
 
   const backLink = (
-    <Link to={SCHOOL_VIOLENCE_PATH} className="inline-flex items-center gap-1">
+    <Link to={SCHOOL_VIOLENCE_CASES_PATH} className="inline-flex items-center gap-1">
       <ChevronLeft className="size-4" />
       사안 목록으로 돌아가기
     </Link>

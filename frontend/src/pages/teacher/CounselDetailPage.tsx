@@ -36,15 +36,8 @@ function isDetailTab(value: string | null): value is DetailTab {
   return TABS.includes(value as DetailTab)
 }
 
-const backLink = (
-  <Link to={TEACHER_COUNSEL_PATH} className="inline-flex items-center gap-1">
-    <ChevronLeft className="size-4" />
-    목록으로 돌아가기
-  </Link>
-)
-
 /** 상담 건 상세(`/teacher/manage-apply/counsel/:id`). 대화 전문은 어디에도 보이지 않는다. */
-function CounselDetailPage() {
+function CounselDetailPage({ listPath = TEACHER_COUNSEL_PATH }: { listPath?: string }) {
   const { id = '' } = useParams()
   const connection = useBackendConnection()
   const { data, isPending, error } = useTeacherCaseDetail(id)
@@ -52,6 +45,12 @@ function CounselDetailPage() {
   const approve = useApproveCase()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabParam = searchParams.get('tab')
+  const backLink = (
+    <Link to={listPath} className="inline-flex items-center gap-1">
+      <ChevronLeft className="size-4" />
+      목록으로 돌아가기
+    </Link>
+  )
 
   // 상세를 열면 읽음 처리한다(건마다 한 번).
   const markedRef = useRef(new Set<string>())

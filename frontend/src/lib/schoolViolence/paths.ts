@@ -3,6 +3,13 @@
 /** 교사 셸의 사안 화면 접두. 상담 메뉴(`/teacher/manage-apply/counsel`)와 겹치지 않게 별도 접두를 쓴다. */
 export const SCHOOL_VIOLENCE_PATH = '/teacher/school-violence'
 
+/** 사안 관리 탭(상담 관리 탭은 기본으로 열린다). */
+export const SCHOOL_VIOLENCE_CASES_PATH = `${SCHOOL_VIOLENCE_PATH}?tab=cases`
+
+/** 학폭 상담 관리에서 여는 상담 상세. */
+export const schoolViolenceCounselDetailPath = (id: string) =>
+  `${SCHOOL_VIOLENCE_PATH}/counsel/${id}`
+
 /** 사안 페이지 */
 export const schoolViolenceCasePath = (id: string) => `${SCHOOL_VIOLENCE_PATH}/${id}`
 

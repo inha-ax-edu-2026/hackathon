@@ -29,7 +29,12 @@ const COLUMNS = ['상담상태', '상담유형', '상담제목', '위험도', '�
  * 「개인상담 관리」 표. 기존 4열에서 상담유형·위험도를 따로 떼어 제목 칸에 몰리지 않게 했다.
  * 행을 누르면 상세로 간다.
  */
-export function TeacherCaseTable({ cases }: { cases: CounselCase[] }) {
+type TeacherCaseTableProps = {
+  cases: CounselCase[]
+  detailPath?: (id: string) => string
+}
+
+export function TeacherCaseTable({ cases, detailPath = counselDetailPath }: TeacherCaseTableProps) {
   const navigate = useNavigate()
 
   return (
@@ -54,13 +59,14 @@ export function TeacherCaseTable({ cases }: { cases: CounselCase[] }) {
           {cases.map((c) => {
             const { chip, text } = splitTitle(c)
             const isNew = c.handoff !== null && !c.read
+            const open = () => navigate(detailPath(c.id))
             return (
               <TableRow
                 key={c.id}
                 tabIndex={0}
-                onClick={() => navigate(counselDetailPath(c.id))}
+                onClick={open}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') navigate(counselDetailPath(c.id))
+                  if (e.key === 'Enter') open()
                 }}
                 className="cursor-pointer"
               >

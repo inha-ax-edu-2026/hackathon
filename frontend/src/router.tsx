@@ -16,6 +16,7 @@ import {
 import {
   SCHOOL_VIOLENCE_PATH,
   schoolViolenceCasePath,
+  schoolViolenceCounselDetailPath,
   schoolViolenceDocumentPath,
 } from '@/lib/schoolViolence/paths.ts'
 import DemoLauncherPage from '@/pages/DemoLauncherPage.tsx'
@@ -76,6 +77,10 @@ export const router = createBrowserRouter([
       { path: TEACHER_COUNSEL_PATH, element: <CounselManagePage /> },
       { path: counselDetailPath(':id'), element: <CounselDetailPage /> },
       { path: SCHOOL_VIOLENCE_PATH, element: <SchoolViolenceListPage /> },
+      {
+        path: schoolViolenceCounselDetailPath(':id'),
+        element: <CounselDetailPage listPath={SCHOOL_VIOLENCE_PATH} />,
+      },
       { path: schoolViolenceCasePath(':id'), element: <SchoolViolenceCasePage /> },
       {
         path: schoolViolenceDocumentPath(':id', ':formId'),
