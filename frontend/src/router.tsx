@@ -4,6 +4,7 @@ import { StudentShell } from '@/components/shell/StudentShell.tsx'
 import { TeacherShell } from '@/components/shell/TeacherShell.tsx'
 import {
   CHATBOT_FORM_PATH,
+  COUNSEL_REGISTER_PATH,
   chatbotPath,
   STUDENT_SCHOOL_VIOLENCE_PATH,
 } from '@/lib/counsel/paths.ts'
@@ -17,6 +18,7 @@ import DemoLauncherPage from '@/pages/DemoLauncherPage.tsx'
 import NotFoundPage from '@/pages/NotFoundPage.tsx'
 import ChatbotChatPage from '@/pages/student/ChatbotChatPage.tsx'
 import ChatbotFormPage from '@/pages/student/ChatbotFormPage.tsx'
+import CounselRegisterPage from '@/pages/student/CounselRegisterPage.tsx'
 import StudentCounselPage from '@/pages/student/StudentCounselPage.tsx'
 import CounselDetailPage from '@/pages/teacher/CounselDetailPage.tsx'
 import SchoolViolenceCasePage from '@/pages/teacher/SchoolViolenceCasePage.tsx'
@@ -45,6 +47,7 @@ export const router = createBrowserRouter([
       { path: STUDENT_SCHOOL_VIOLENCE_PATH, element: <StudentCounselPage /> },
       { path: CHATBOT_FORM_PATH, element: <ChatbotFormPage /> },
       { path: chatbotPath(':id'), element: <ChatbotChatPage /> },
+      { path: COUNSEL_REGISTER_PATH, element: <CounselRegisterPage /> },
     ],
   },
   {

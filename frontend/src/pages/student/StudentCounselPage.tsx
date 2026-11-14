@@ -1,13 +1,12 @@
-import { Plus } from 'lucide-react'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { useStudentCases } from '@/api/studentCounsel.ts'
 import { StatusBadge } from '@/components/counsel/CaseBadges.tsx'
+import { CounselMethodDialog } from '@/components/counsel/CounselMethodDialog.tsx'
 import { PageBody, PageHeader } from '@/components/shell/PageHeader.tsx'
-import { Button } from '@/components/ui/button.tsx'
 import { SCHOOL_VIOLENCE_TOPIC } from '@/lib/counsel/form.ts'
 import { formatDateTime } from '@/lib/counsel/format.ts'
 import { DEMO_TEACHER_NAME } from '@/lib/counsel/identity.ts'
-import { CHATBOT_FORM_PATH, chatbotPath } from '@/lib/counsel/paths.ts'
+import { chatbotPath } from '@/lib/counsel/paths.ts'
 
 const COLUMNS = ['상담상태', '상담방식', '상담일시', '상담제목', '상담 교사']
 
@@ -25,13 +24,7 @@ function StudentCounselPage() {
       <PageHeader
         title="학폭 상담"
         description="학교폭력 상담 내역을 확인해요."
-        actions={
-          <Button asChild size="lg">
-            <Link to={CHATBOT_FORM_PATH}>
-              <Plus /> 상담하기
-            </Link>
-          </Button>
-        }
+        actions={<CounselMethodDialog />}
       />
       <PageBody>
         <section className="overflow-hidden rounded-[14px] border bg-card">
