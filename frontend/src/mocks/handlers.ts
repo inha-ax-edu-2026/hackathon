@@ -3,6 +3,7 @@ import { demoHandlers } from '@/mocks/counsel/demoHandlers.ts'
 import { studentHandlers } from '@/mocks/counsel/studentHandlers.ts'
 import { teacherHandlers } from '@/mocks/counsel/teacherHandlers.ts'
 import { apiUrl } from '@/mocks/http.ts'
+import { parentHandlers } from '@/mocks/parent/handlers.ts'
 import { schoolViolenceHandlers } from '@/mocks/schoolViolence/handlers.ts'
 
 /**
@@ -16,4 +17,5 @@ export const handlers = [
   ...studentHandlers,
   ...teacherHandlers,
   ...schoolViolenceHandlers,
+  ...parentHandlers,
 ]

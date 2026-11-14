@@ -27,6 +27,7 @@ import ChatbotFormPage from '@/pages/student/ChatbotFormPage.tsx'
 import CounselRegisterPage from '@/pages/student/CounselRegisterPage.tsx'
 import StudentCounselPage from '@/pages/student/StudentCounselPage.tsx'
 import CounselDetailPage from '@/pages/teacher/CounselDetailPage.tsx'
+import ParentInquiriesPage from '@/pages/teacher/ParentInquiriesPage.tsx'
 import SchoolViolenceCasePage from '@/pages/teacher/SchoolViolenceCasePage.tsx'
 import SchoolViolenceDocumentPage from '@/pages/teacher/SchoolViolenceDocumentPage.tsx'
 import SchoolViolenceListPage from '@/pages/teacher/SchoolViolenceListPage.tsx'
@@ -62,7 +63,11 @@ export const router = createBrowserRouter([
   },
   {
     path: '/parent',
-    element: <CounselUserShell audience="parent" />,
+    element: (
+      <BackendConnectionGate>
+        <CounselUserShell audience="parent" />
+      </BackendConnectionGate>
+    ),
     children: [
       { index: true, element: <Navigate to={PARENT_SCHOOL_VIOLENCE_PATH} replace /> },
       { path: PARENT_SCHOOL_VIOLENCE_PATH, element: <ParentCounselPage /> },
@@ -80,6 +85,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to={SCHOOL_VIOLENCE_PATH} replace /> },
       { path: SCHOOL_VIOLENCE_PATH, element: <SchoolViolenceListPage /> },
+      { path: '/teacher/parent-inquiries', element: <ParentInquiriesPage /> },
       {
         path: schoolViolenceCounselDetailPath(':id'),
         element: <CounselDetailPage />,

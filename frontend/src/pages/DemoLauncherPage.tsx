@@ -14,12 +14,6 @@ const SCREENS = [
     hint: '학폭 상담 → AI 챗봇 상담',
   },
   {
-    label: '학부모 화면 열기',
-    to: '/parent',
-    icon: UsersRound,
-    hint: '학폭 상담 → FAQ 챗봇 상담',
-  },
-  {
     label: '교사 화면 열기',
     to: '/teacher',
     icon: Presentation,
@@ -59,7 +53,7 @@ function DemoLauncherPage() {
         <BackendConnectionButton />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         {SCREENS.map(({ label, to, icon: Icon, hint }) => (
           <a
             key={to}
@@ -78,6 +72,23 @@ function DemoLauncherPage() {
         ))}
       </div>
 
+      <a
+        href="/parent"
+        target="_blank"
+        rel="noopener"
+        className="group flex items-center gap-4 rounded-xl border bg-card p-5 transition-colors hover:border-primary"
+      >
+        <UsersRound className="size-7 shrink-0 text-primary" />
+        <div className="space-y-2">
+          <span className="flex items-center gap-1 text-base font-semibold">
+            학부모 화면 열기
+            <ExternalLink className="size-4 text-muted-foreground group-hover:text-primary" />
+          </span>
+          <p className="text-muted-foreground">
+            학교폭력 안내 챗봇 · 자녀 진행 단계 · 교사 문의·답변
+          </p>
+        </div>
+      </a>
       <div className="flex items-center justify-between gap-4 rounded-xl border bg-card p-5">
         <div className="space-y-1">
           <p className="font-semibold">시연 초기화</p>

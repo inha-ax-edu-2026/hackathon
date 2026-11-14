@@ -14,8 +14,8 @@ import type { LnbMenuItem } from './Lnb.tsx'
 
 export function CounselUserShell({ audience }: { audience: 'student' | 'parent' }) {
   const parent = audience === 'parent'
-  const name = parent ? `${DEMO_STUDENT.name} 보호자` : DEMO_STUDENT.name
-  const identity = parent ? `${studentLabel(DEMO_STUDENT)} 보호자` : studentLabel(DEMO_STUDENT)
+  const name = parent ? '학부모' : DEMO_STUDENT.name
+  const identity = parent ? '가상 보호자 체험' : studentLabel(DEMO_STUDENT)
   const menu: LnbMenuItem[] = [
     { label: '시간', icon: CalendarDays },
     { label: '급식', icon: Utensils },

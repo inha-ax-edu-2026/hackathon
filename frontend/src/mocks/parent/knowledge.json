@@ -1,0 +1,130 @@
+{
+  "version": "2026-11-14",
+  "reviewed_at": "2026-11-14",
+  "sources": {
+    "guide": {
+      "label": "교육부 · 2026 학교폭력 사안처리 가이드북",
+      "url": "https://www.moe.go.kr/boardCnts/viewRenew.do?boardID=316&boardSeq=105456&lev=0&m=030214"
+    },
+    "plan": {
+      "label": "부산교육청 · 2026 학생 생활교육 기본 계획",
+      "url": "https://www.pen.go.kr/upload/dep09/na/bbs_2556/ntt_1165990/doc_1fb7v84e7%3Decv52%3D43vf9%3Da6v40%3D4577v5b50v00c5_v9707.pdf"
+    },
+    "self": {
+      "label": "찾기쉬운 생활법령정보 · 학교장 자체해결",
+      "url": "https://www.easylaw.go.kr/CSP/CnpClsMainBtr.laf?ccfNo=4&cciNo=1&cnpClsNo=1&csmSeq=1408&popMenu=ov"
+    },
+    "investigation": {
+      "label": "찾기쉬운 생활법령정보 · 사안조사",
+      "url": "https://www.easylaw.go.kr/CSP/CnpClsMainBtr.laf?ccfNo=3&cciNo=2&cnpClsNo=1&csmSeq=1408&popMenu=ov"
+    },
+    "committee": {
+      "label": "부산교육청 · 학교폭력대책심의위원회",
+      "url": "https://home.pen.go.kr/oneclick/cm/cntnts/cntntsView.do?cntntsId=2743&mi=15123"
+    },
+    "insurance": {
+      "label": "학교안전공제중앙회 · 피해학생 지원",
+      "url": "https://ssif.or.kr/safety/support_03.php"
+    },
+    "insurance_call": {
+      "label": "학교안전공제중앙회 · 상담 안내",
+      "url": "https://ssif.or.kr/business/univ_02.php"
+    },
+    "legal": {
+      "label": "대한법률구조공단",
+      "url": "https://www.klac.or.kr/"
+    },
+    "police": {
+      "label": "경찰청 · 117 학교폭력 신고센터",
+      "url": "https://theyouthacademy.police.go.kr/main/Content.do?cid=policy12"
+    }
+  },
+  "cards": [
+    {
+      "id": "procedure",
+      "title": "학교폭력 처리 절차",
+      "category": "school",
+      "keywords": ["절차", "순서", "어떻게 진행", "처리 과정"],
+      "text": "학교가 사안을 접수하고 학생 안전을 확인한 뒤, 관련 학생·보호자 안내와 사안조사를 진행합니다. 전담기구의 검토를 거쳐 학교장 자체해결 또는 교육지원청 심의 절차로 이어집니다. 학교폭력 해당 여부나 조치는 챗봇이 결정하지 않습니다.",
+      "sources": ["guide", "investigation"]
+    },
+    {
+      "id": "separation",
+      "title": "학생 분리와 안전 보호",
+      "category": "school",
+      "keywords": ["분리", "접촉", "보호 조치", "같은 반"],
+      "text": "학생 안전을 위해 가해 관련 학생과 피해 관련 학생의 분리를 검토합니다. 초기 분리는 최대 7일 범위이며, 피해학생의 의사와 예외 사유 등을 확인합니다. 분리는 징계 확정을 뜻하지 않습니다. 자녀에게 필요한 동선·수업·보호 조치는 담당 교사에게 요청해 주세요.",
+      "sources": ["plan", "guide"]
+    },
+    {
+      "id": "statement",
+      "title": "학생 진술서와 면담 준비",
+      "category": "school",
+      "keywords": ["진술", "확인서", "면담", "증거", "서류"],
+      "text": "학생이 직접 경험한 일시·장소·행동과 기억나는 내용을 본인의 표현으로 작성하고, 직접 본 사실과 들은 내용을 구분해 주세요. 자료는 학교가 안내한 경로로 제출합니다. 사안 처리 과정의 학생·보호자 면담은 초기 상담과 구분하며, 녹음·전사는 사전 동의 후 진행합니다.",
+      "sources": ["investigation", "guide"]
+    },
+    {
+      "id": "investigator",
+      "title": "전담조사관은 어떤 역할인가요?",
+      "category": "school",
+      "keywords": ["조사관", "조사 일정", "조사 방식"],
+      "text": "전담조사관은 관련 학생·보호자·목격자 등의 진술과 자료를 확인해 사안조사를 수행합니다. 조사 일정과 제출 방식은 학교·관할 교육지원청의 안내를 확인해 주세요. 면담 일정 변경이나 자녀에게 필요한 지원은 담당 교사에게 문의할 수 있습니다.",
+      "sources": ["investigation"]
+    },
+    {
+      "id": "self_resolution",
+      "title": "학교장 자체해결 조건",
+      "category": "school",
+      "keywords": ["자체해결", "자체 해결", "합의", "동의 조건"],
+      "text": "자체해결은 네 요건을 모두 확인해야 합니다: ① 2주 이상 치료가 필요한 진단서를 발급받지 않은 경우 ② 재산상 피해가 없거나 즉시 복구되었거나 복구 약속이 있는 경우 ③ 지속적인 사안이 아닌 경우 ④ 신고·진술·자료제공 등에 대한 보복행위가 아닌 경우. 피해학생과 보호자가 심의를 원하지 않는다는 서면 의사 확인과 전담기구 검토도 필요합니다. 채팅은 공식 동의가 아닙니다. 합의만으로 자동 종결되지 않으며, 복구 약속 미이행이나 새로운 사실 확인 등에는 예외 절차가 있습니다.",
+      "sources": ["self", "investigation"]
+    },
+    {
+      "id": "deadlines",
+      "title": "보고와 처리 기한",
+      "category": "school",
+      "keywords": ["48시간", "14일", "기한", "보고 언제", "며칠"],
+      "text": "학교는 사안 인지 후 교육지원청에 48시간 이내 보고하고, 중대 사안은 즉시 유선 보고하도록 안내됩니다. 학교 단계의 자체해결 검토·심의 요청은 원칙적으로 14일 이내 처리하며 필요한 경우 연장 절차가 있습니다. 이는 챗봇의 답변 대기 기한이 아닙니다. 개별 사안의 접수일·연장 여부와 정확한 일정은 담당 교사에게 확인해 주세요.",
+      "sources": ["plan", "guide"]
+    },
+    {
+      "id": "committee",
+      "title": "심의위원회 일정·의견 제출",
+      "category": "agency",
+      "keywords": ["심의", "위원회", "교육지원청", "출석", "의견 제출"],
+      "text": "심의위원회는 관할 교육지원청 소관입니다. 학교의 개최 요청 접수 후 원칙적으로 21일 이내 개최하며, 사정에 따라 7일 이내 연장될 수 있습니다. 정확한 일시·장소는 교육지원청 통지를 확인해 주세요. 보호자는 의견을 진술하거나 서면 자료를 제출할 수 있으며, 결과는 교육장의 공식 서면 통지로 확인합니다. 학교생활·보호 지원은 교사에게, 심의 일정·제출 방법은 해당 교육지원청에 문의해 주세요.",
+      "agency": "관할 교육지원청 학교폭력 담당 부서",
+      "contact": "학교에서 안내한 관할 교육지원청 연락처 확인",
+      "sources": ["committee", "guide"]
+    },
+    {
+      "id": "medical_cost",
+      "title": "치료비·피해학생 지원",
+      "category": "agency",
+      "keywords": ["치료비", "병원비", "공제", "배상", "보험"],
+      "text": "치료비 등 비용 지원의 대상·범위·지급 여부는 학교안전공제회 등 담당 기관이 심사합니다. 학교는 필요한 확인·신청 안내를 도울 수 있지만 챗봇이 지급을 보장할 수는 없습니다. 진료 영수증과 관련 자료를 준비하고 담당 교사 또는 학교안전공제 상담 창구에서 신청 절차를 확인해 주세요.",
+      "agency": "학교안전공제회",
+      "contact": "1688-4900",
+      "sources": ["insurance", "insurance_call"]
+    },
+    {
+      "id": "appeal",
+      "title": "불복·법률 상담",
+      "category": "agency",
+      "keywords": ["불복", "행정심판", "소송", "변호사", "이의신청", "법률"],
+      "text": "조치에 대한 불복 절차와 기간은 공식 처분 통지의 내용을 확인해야 합니다. 법률 상담은 대한법률구조공단 등 전문기관에서 받을 수 있습니다. 챗봇이나 학교 담당 교사가 승소 가능성·법적 결론을 대신 판단하지 않습니다.",
+      "agency": "대한법률구조공단",
+      "contact": "132",
+      "sources": ["legal"]
+    },
+    {
+      "id": "formal_forms",
+      "title": "동의·심의 요청 취소는 정식 서식으로",
+      "category": "restricted",
+      "keywords": ["취소", "철회", "동의할", "동의해", "동의합니다", "동의할게", "취하"],
+      "text": "채팅으로 자체해결 동의나 심의 요청 취소를 공식 접수할 수 없습니다. 담당 교사에게 해당 사안의 정식 서식과 제출 방법을 안내받아 학생·보호자가 확인·서명해 주세요. 이 대화만으로 사안 상태가 바뀌거나 심의가 취소되지 않습니다.",
+      "sources": ["self", "guide"]
+    }
+  ]
+}

@@ -12,6 +12,9 @@ import { HANDOFF_REASON_LABEL } from '@/lib/counsel/labels.ts'
 import { maskedStudentLabel, splitTitle, timeAgo } from '@/lib/counsel/teacherView.ts'
 
 type NotificationSheetProps = {
+  parentCount?: number
+  urgentParentCount?: number
+  onSelectParent?: () => void
   open: boolean
   onOpenChange: (open: boolean) => void
   /** 안 읽은 전환 건(알림). 최신순. */
@@ -25,17 +28,35 @@ export function NotificationSheet({
   onOpenChange,
   notifications,
   onSelect,
+  parentCount = 0,
+  urgentParentCount = 0,
+  onSelectParent,
 }: NotificationSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="gap-0 sm:max-w-md">
         <SheetHeader className="border-b px-6 py-5">
           <SheetTitle className="text-lg">알림</SheetTitle>
-          <SheetDescription>개인상담으로 전환된 상담이 여기에 쌓여요.</SheetDescription>
+          <SheetDescription>학생 상담 전환과 학부모 문의를 확인해 주세요.</SheetDescription>
         </SheetHeader>
+        {parentCount > 0 && (
+          <button
+            type="button"
+            className="border-b bg-primary/5 p-5 text-left"
+            onClick={onSelectParent}
+          >
+            <span className="font-semibold text-primary">학부모 문의 {parentCount}건</span>
+            {urgentParentCount > 0 && (
+              <span className="ml-2 text-sm font-bold text-destructive">
+                긴급 {urgentParentCount}건
+              </span>
+            )}
+            <p className="mt-1 text-sm text-muted-foreground">학부모 문의함에서 확인·답변하기 →</p>
+          </button>
+        )}
         {notifications.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-1 text-center">
-            <p className="font-medium">알림이 없습니다</p>
+            <p className="font-medium">새 학생 상담 알림이 없습니다</p>
             <p className="text-sm text-muted-foreground">
               새로운 알림이 도착하면 여기에 표시됩니다
             </p>
