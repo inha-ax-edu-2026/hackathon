@@ -1,4 +1,4 @@
-const DEFAULT_BACKEND_URL = 'https://sunglasses-pediatric-checks-dozen.trycloudflare.com'
+const DEFAULT_BACKEND_URL = 'https://creations-continuously-sponsor-contrary.trycloudflare.com'
 const MOCK_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '')
 const ENV_BASE_URL = MOCK_BASE_URL || DEFAULT_BACKEND_URL
 const STORAGE_KEY = 'safepath.backend.connection'

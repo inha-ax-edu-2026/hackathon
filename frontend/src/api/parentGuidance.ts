@@ -11,6 +11,7 @@ export type ParentCard = {
   sources: ParentSource[]
   agency?: string
   contact?: string
+  scope_notice?: string
 }
 export type ParentProfile = {
   actor_id: string

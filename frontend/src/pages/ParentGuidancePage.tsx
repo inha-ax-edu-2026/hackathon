@@ -18,7 +18,7 @@ const ACTORS = [
 ]
 const CATEGORY = {
   school: '학교 안내',
-  agency: '담당 기관 안내',
+  agency: '다른 기관 업무 · 교사 권한 외',
   teacher: '교사 확인 필요',
   restricted: '답변 범위 안내',
   emergency: '즉시 안전 확인',
@@ -172,8 +172,9 @@ export default function ParentGuidancePage({
                 aria-relevant="additions"
               >
                 <div className="rounded-xl bg-muted/50 p-4 text-sm leading-7">
-                  안녕하세요. 학교폭력 처리 절차와 자녀의 진행 단계를 안내해 드려요. 개별 판단이
-                  필요한 내용은 담당 교사에게 연결합니다. 아래 질문을 선택하거나 직접 입력해 주세요.
+                  안녕하세요. 학교폭력 처리 절차와 자녀의 진행 단계를 안내해 드려요. 학교에서 확인할
+                  내용은 담당 교사에게, 조치 결정·치료비 심사·불복은 소관 기관으로 안내합니다. 아래
+                  질문을 선택하거나 직접 입력해 주세요.
                 </div>
                 {data.turns.map((turn) => (
                   <div key={turn.id} className="space-y-3">
@@ -188,9 +189,23 @@ export default function ParentGuidancePage({
                       >
                         {CATEGORY[turn.answer.category]}
                       </span>
-                      <p className="mt-2 whitespace-pre-wrap text-sm leading-7">
-                        {turn.answer.text}
-                      </p>
+                      {turn.answer.card?.scope_notice &&
+                      turn.answer.text.startsWith(turn.answer.card.scope_notice) ? (
+                        <>
+                          <strong className="mt-2 block rounded-lg bg-primary/5 p-3 text-sm leading-7">
+                            {turn.answer.card.scope_notice}
+                          </strong>
+                          <p className="mt-3 whitespace-pre-wrap text-sm leading-7">
+                            {turn.answer.text
+                              .slice(turn.answer.card.scope_notice.length)
+                              .trimStart()}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="mt-2 whitespace-pre-wrap text-sm leading-7">
+                          {turn.answer.text}
+                        </p>
+                      )}
                       {turn.answer.card?.agency && (
                         <p className="mt-2 text-sm font-medium">
                           {turn.answer.card.agency} · {turn.answer.card.contact}
@@ -229,6 +244,8 @@ export default function ParentGuidancePage({
                   '자체해결 조건',
                   '심의위원회 일정',
                   '치료비 지원',
+                  '우리 애 무슨 조치 받아요?',
+                  '결과에 불복하고 싶어요',
                 ].map((q) => (
                   <button
                     type="button"

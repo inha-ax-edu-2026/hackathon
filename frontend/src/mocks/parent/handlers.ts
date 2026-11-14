@@ -141,15 +141,27 @@ export const parentHandlers = [
       return previous.question === body.text
         ? HttpResponse.json({ turn: previous })
         : errorJson(409, '같은 요청 ID의 질문이 다릅니다.')
+    const compact = body.text.replace(/\s+/g, '')
+    const agencyCard = ['appeal', 'medical_cost', 'measures', 'committee']
+      .map((id) => cards.find((c) => c.id === id))
+      .find(
+        (c) =>
+          c &&
+          knowledge.cards
+            .find((k) => k.id === c.id)
+            ?.keywords.some((word) => compact.includes(word.replace(/\s+/g, ''))),
+      )
     let card =
+      agencyCard ??
       cards.find((c) =>
         knowledge.cards
           .find((k) => k.id === c.id)
           ?.keywords.some((word) => body.text.includes(word)),
-      ) ?? null
+      ) ??
+      null
     let category: ParentTurn['answer']['category'] = card?.category ?? 'teacher'
     if (
-      /몇 호|몇호|학폭인지|학교폭력인지|상대.{0,12}(연락처|전화|진술서|개인정보)|가해.{0,12}(연락처|진술서)/.test(
+      /학폭인지|학교폭력인지|상대.{0,12}(연락처|전화|진술서|개인정보)|가해.{0,12}(연락처|진술서)/.test(
         body.text,
       )
     ) {
@@ -172,7 +184,12 @@ export const parentHandlers = [
     if (category === 'emergency')
       answer =
         '지금은 자녀의 안전을 먼저 확인해 주세요. 즉각적인 위험은 112, 학교폭력 신고·상담은 117에 직접 연락해 주세요. 교사 문의함에도 긴급 알림을 등록했지만 교사 답변을 기다리지 마세요.'
-    if (category !== 'emergency' && category !== 'restricted' && /진행 단계/.test(body.text)) {
+    if (
+      category !== 'emergency' &&
+      category !== 'restricted' &&
+      category !== 'agency' &&
+      /진행 단계/.test(body.text)
+    ) {
       category = 'school'
       card = null
       answer =
@@ -189,7 +206,7 @@ export const parentHandlers = [
         text: answer,
         card,
         engine: 'mock_guide',
-        offer_teacher: category !== 'emergency',
+        offer_teacher: category !== 'emergency' && category !== 'agency',
         urgent: category === 'emergency',
       },
     }

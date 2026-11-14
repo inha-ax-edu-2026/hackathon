@@ -75,4 +75,23 @@ describe('학부모 안내 연동', () => {
     await apiFetch('/api/demo/reset', { method: 'POST' })
     expect((await fetchParentWorkspace('guardian_victim')).notices).toHaveLength(0)
   })
+  it('업무 범위 밖 질문에는 교사 권한 밖임을 먼저 밝히고 소관 기관을 안내한다', async () => {
+    for (const [i, text] of [
+      '우리 애 무슨 조치 받아요?',
+      '치료비는요?',
+      '결과에 불복하고 싶어요',
+    ].entries()) {
+      const { turn } = await sendParentQuestion('guardian_victim', {
+        text,
+        request_id: `scope-${i}`,
+      })
+      expect(turn.answer.category).toBe('agency')
+      expect(turn.answer.card?.scope_notice).toContain('학교(담당 교사)의 업무 범위가 아니며')
+      expect(turn.answer.text.startsWith(turn.answer.card?.scope_notice ?? 'MISSING')).toBe(true)
+      expect(turn.answer.card?.contact).toBeTruthy()
+      expect(turn.answer.card?.sources.length).toBeGreaterThan(0)
+      expect(turn.answer.offer_teacher).toBe(false)
+    }
+    expect((await fetchParentWorkspace('guardian_victim')).inquiries).toHaveLength(0)
+  })
 })
