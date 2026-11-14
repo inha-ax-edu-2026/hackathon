@@ -84,7 +84,7 @@ class ParentGuidanceTests(unittest.TestCase):
             self.assertEqual(db.execute("SELECT COUNT(*) FROM parent_inquiries").fetchone()[0], 1)
 
     def test_cannot_disclose_opponent_or_predict_penalty(self):
-        for i, text in enumerate(["가해 학생의 진술서 보여 주세요", "몇 호 처분 받을까요", "학교폭력인지 판단해주세요", "상대 보호자 전화번호"]):
+        for i, text in enumerate(["가해 학생의 진술서 보여 주세요", "학교폭력인지 판단해주세요", "상대 보호자 전화번호"]):
             self.assertEqual(self.ask(text, str(i)).json()["turn"]["answer"]["category"], "restricted")
         value = self.workspace()
         self.assertNotIn("이도윤", json.dumps(value, ensure_ascii=False))
@@ -176,3 +176,38 @@ class ParentGuidanceTests(unittest.TestCase):
         self.assertEqual(result.status_code, 201, result.text)
         self.assertTrue(result.json()["inquiry"]["urgent"])
         self.assertNotIn("1~2일", result.json()["message"])
+
+    def test_agency_questions_lead_with_teacher_scope_boundary_and_responsible_contact(self):
+        for i, (question, card_id, agency) in enumerate([
+            ("우리 애 무슨 조치 받아요?", "measures", "교육지원청"),
+            ("몇 호 처분 받을까요", "measures", "교육지원청"),
+            ("치료비는요?", "medical_cost", "학교안전공제회"),
+            ("결과에 불복하고 싶어요", "appeal", "행정심판위원회"),
+            ("선생님, 치료비 지원을 결정해 주세요", "medical_cost", "학교안전공제회"),
+            ("선생님 심의 일정 변경해 주세요", "committee", "교육지원청"),
+        ]):
+            response = self.ask(question, "scope_" + str(i))
+            self.assertEqual(response.status_code, 200, response.text)
+            answer = response.json()["turn"]["answer"]
+            self.assertEqual(answer["category"], "agency")
+            card = answer["card"]
+            self.assertEqual(card["id"], card_id)
+            self.assertTrue(answer["text"].startswith(card["scope_notice"]))
+            self.assertIn("학교(담당 교사)의 업무 범위가 아니며", card["scope_notice"])
+            self.assertIn(agency, card["scope_notice"])
+            self.assertTrue(card["contact"])
+            self.assertTrue(card["sources"])
+            self.assertFalse(answer["offer_teacher"])
+            if card_id == "measures":
+                self.assertIn("예측하지 않습니다", answer["text"])
+                self.assertIn("학교장 긴급조치", answer["text"])
+        self.assertEqual(self.calls, [])
+        self.assertEqual(self.workspace()["inquiries"], [])
+        self.assertEqual(len(self.client.get("/api/teacher/parent-inquiries").json()["guidance_log"]), 6)
+
+    def test_privacy_and_emergency_take_priority_over_agency_referral(self):
+        hidden = self.ask("상대 학생 진술서 보고 몇 호 받을지 알려줘", "mixed_private").json()["turn"]["answer"]
+        self.assertEqual(hidden["category"], "restricted")
+        urgent = self.ask("치료비 문의인데 지금 아이가 맞고 있어요", "mixed_urgent").json()["turn"]["answer"]
+        self.assertTrue(urgent["urgent"])
+        self.assertEqual(urgent["category"], "emergency")
