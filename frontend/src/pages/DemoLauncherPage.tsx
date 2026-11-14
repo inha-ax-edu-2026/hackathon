@@ -21,7 +21,7 @@ const SCREENS = [
   },
 ]
 
-/** 시연 런처(`/demo`). 발표자가 학생·교사 화면을 새 탭으로 열고, 시연 상태를 시드로 되돌린다. */
+/** 시연 런처(`/`). 발표자가 학생·교사 화면을 새 탭으로 열고, 시연 상태를 시드로 되돌린다. */
 function DemoLauncherPage() {
   const reset = useResetDemo()
   const connection = useBackendConnection()
@@ -29,7 +29,7 @@ function DemoLauncherPage() {
   return (
     <section className="mx-auto flex max-w-xl flex-col gap-6 py-12">
       <div className="space-y-1">
-        <h1 className="text-xl font-bold">학교폭력 상담 시연</h1>
+        <h1 className="text-xl font-bold">AI 챗봇 상담 시연</h1>
         <p className="text-muted-foreground">
           학생 화면과 교사 화면을 각각 새 탭으로 열어 나란히 띄워 주세요.
         </p>

@@ -41,8 +41,7 @@ export const router = createBrowserRouter([
     path: '/',
     element: <App />,
     children: [
-      { index: true, element: <Navigate to={SCHOOL_VIOLENCE_PATH} replace /> },
-      { path: 'demo', element: <DemoLauncherPage /> },
+      { index: true, element: <DemoLauncherPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

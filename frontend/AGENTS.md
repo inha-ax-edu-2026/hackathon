@@ -39,7 +39,7 @@ src/
 ├── App.tsx    # 셸 밖 페이지(시연 런처, 404)의 레이아웃
 ├── router.tsx # 경로 정의. 새 페이지는 알맞은 레이아웃의 children에 추가
 ├── pages/     # 경로 하나당 페이지 컴포넌트 하나
-│   ├── DemoLauncherPage.tsx  # `/demo` 시연 런처(학생·교사 화면 열기, 시연 초기화)
+│   ├── DemoLauncherPage.tsx  # `/` 시연 런처(학생·교사 화면 열기, 시연 초기화)
 │   ├── student/              # `/student/*` 내 상담, 챗봇 양식·대화, 개인상담 신청
 │   └── teacher/              # `/teacher/*` 개인상담 관리 목록·상세
 ├── components/
