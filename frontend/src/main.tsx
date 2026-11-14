@@ -21,15 +21,18 @@ const rootElement = document.getElementById('root')
 if (!rootElement) throw new Error('#root 요소를 찾을 수 없습니다.')
 rootElement.textContent = '상담 화면을 준비하고 있습니다…'
 
-let stopMocking = () => {}
+// 워커는 한 번만 켠다. 목 모드는 모든 핸들러, 백엔드 모드는 백엔드에 없는 사안 API 핸들러만 둔다.
+// 나머지 요청은 bypass로 실제 백엔드에 그대로 간다.
+let workerReady: Promise<void> | undefined
 async function setMocking(enabled: boolean) {
-  if (!enabled) {
-    stopMocking()
-    return
-  }
-  const { worker } = await import('@/mocks/browser.ts')
-  stopMocking = () => worker.stop()
-  await worker.start({ onUnhandledFrame: 'bypass' })
+  const [{ worker }, { handlers }, { schoolViolenceHandlers }] = await Promise.all([
+    import('@/mocks/browser.ts'),
+    import('@/mocks/handlers.ts'),
+    import('@/mocks/schoolViolence/handlers.ts'),
+  ])
+  workerReady ??= worker.start({ onUnhandledFrame: 'bypass' }).then(() => undefined)
+  await workerReady
+  worker.resetHandlers(...(enabled ? handlers : schoolViolenceHandlers))
 }
 
 registerMockController(setMocking)

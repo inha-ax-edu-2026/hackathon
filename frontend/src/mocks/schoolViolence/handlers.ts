@@ -80,7 +80,7 @@ export const schoolViolenceHandlers = [
       }
       return updateDb((db) => {
         const counsel = findCase(db, counselCaseId)
-        if (!counsel || counsel.case.status === 'in_progress') {
+        if (!body?.external_counsel && (!counsel || counsel.case.status === 'in_progress')) {
           return errorJson(404, COUNSEL_NOT_FOUND_DETAIL)
         }
         if (findCaseByCounsel(db, counselCaseId)) return errorJson(409, ALREADY_INTAKE_DETAIL)

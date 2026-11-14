@@ -1,5 +1,7 @@
 const DEFAULT_BACKEND_URL = 'https://musicians-trademark-sisters-shark.trycloudflare.com'
 const MOCK_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '')
+/** 백엔드에 아직 없는 API. 백엔드 모드에서도 MSW 목이 처리한다(src/mocks/handlers.ts의 사안 핸들러). */
+const MOCK_ONLY_PREFIX = '/api/teacher/school-violence'
 const ENV_BASE_URL = MOCK_BASE_URL || DEFAULT_BACKEND_URL
 const STORAGE_KEY = 'safepath.backend.connection'
 
@@ -249,7 +251,9 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
     })
   const started = revision
   const data = await requestJson<T>(
-    connection.mode === 'mock' ? MOCK_BASE_URL : connection.baseUrl,
+    connection.mode === 'mock' || path.startsWith(MOCK_ONLY_PREFIX)
+      ? MOCK_BASE_URL
+      : connection.baseUrl,
     path,
     options,
   )

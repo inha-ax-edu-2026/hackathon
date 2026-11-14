@@ -10,7 +10,7 @@ import type {
   SchoolViolenceDocumentResponse,
   UpdateSchoolViolenceInfoRequest,
 } from '@/api/schoolViolenceTypes.ts'
-import { ApiError, apiFetch } from '@/lib/api.ts'
+import { ApiError, apiFetch, getBackendConnection } from '@/lib/api.ts'
 
 /**
  * 교사 학교폭력 사안 API 훅 (`/api/teacher/school-violence/...`, 제안 계약).
@@ -57,7 +57,11 @@ export function useIntakeSchoolViolenceCase() {
     mutationFn: (counselCaseId: string) =>
       apiFetch<SchoolViolenceCaseResponse>(BASE, {
         method: 'POST',
-        body: { counsel_case_id: counselCaseId } satisfies IntakeSchoolViolenceCaseRequest,
+        body: {
+          counsel_case_id: counselCaseId,
+          // 백엔드 모드의 상담 건은 목 저장소에 없다. 사안만 목이 처리한다.
+          external_counsel: getBackendConnection().mode === 'backend',
+        } satisfies IntakeSchoolViolenceCaseRequest,
       }),
     onSuccess: (data) => {
       queryClient.setQueryData(schoolViolenceCaseKey(data.case.id), data)
@@ -67,6 +71,17 @@ export function useIntakeSchoolViolenceCase() {
       ])
     },
   })
+}
+
+/** 상담 건에 연결된 사안 ID. 백엔드 상담 응답에는 연결 정보가 없어 사안 목록에서 찾는다. */
+export function useLinkedSchoolViolenceCaseId(counselCaseId: string, enabled: boolean) {
+  const { data } = useQuery({
+    queryKey: schoolViolenceCasesKey,
+    queryFn: () => apiFetch<SchoolViolenceCaseListResponse>(BASE),
+    select: (res) => res.cases.find((c) => c.counsel_case_ids.includes(counselCaseId))?.id ?? null,
+    enabled,
+  })
+  return data ?? null
 }
 
 export const schoolViolenceDocumentKey = (caseId: string, formId: string) =>

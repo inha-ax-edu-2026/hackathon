@@ -70,5 +70,6 @@ export function toListItem(stored: StoredSchoolViolenceCase): SchoolViolenceCase
     received_at: stored.info.received_at,
     students: stored.info.students,
     progress: progressOf(stored.documents),
+    counsel_case_ids: stored.counsel_case_ids,
   }
 }

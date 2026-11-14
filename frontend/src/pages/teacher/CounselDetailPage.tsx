@@ -1,6 +1,7 @@
 import { ChevronLeft } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
+import { useLinkedSchoolViolenceCaseId } from '@/api/schoolViolence.ts'
 import { useApproveCase, useMarkCaseRead, useTeacherCaseDetail } from '@/api/teacherCounsel.ts'
 import { useBackendConnection } from '@/components/counsel/BackendConnection.tsx'
 import { RiskBadge, StatusBadge } from '@/components/counsel/CaseBadges.tsx'
@@ -40,6 +41,9 @@ function isDetailTab(value: string | null): value is DetailTab {
 function CounselDetailPage({ listPath = TEACHER_COUNSEL_PATH }: { listPath?: string }) {
   const { id = '' } = useParams()
   const connection = useBackendConnection()
+  // 백엔드 상담 응답은 사안 접수를 모르지만, 사안 API는 목이 처리하므로 접수 카드를 보인다.
+  const isBackend = connection.mode === 'backend'
+  const linkedCaseId = useLinkedSchoolViolenceCaseId(id, isBackend)
   const { data, isPending, error } = useTeacherCaseDetail(id)
   const markRead = useMarkCaseRead()
   const approve = useApproveCase()
@@ -217,10 +221,10 @@ function CounselDetailPage({ listPath = TEACHER_COUNSEL_PATH }: { listPath?: str
                   </Button>
                 </section>
               )}
-              {school_violence_intake_supported && (
+              {(school_violence_intake_supported || isBackend) && (
                 <IntakeCard
                   counselCaseId={id}
-                  schoolViolenceCaseId={school_violence_case_id}
+                  schoolViolenceCaseId={school_violence_case_id ?? linkedCaseId}
                   recommendation={school_violence_recommendation}
                 />
               )}

@@ -180,6 +180,8 @@ export type SchoolViolenceCaseListItem = {
   received_at: string
   students: RelatedStudent[]
   progress: DocumentProgress
+  /** 이 사안에 연결된 상담 건 ID. 백엔드 모드에서 상담 건 → 사안을 찾는 데 쓴다. */
+  counsel_case_ids: string[]
 }
 
 // ── 엔드포인트별 요청·응답 ──
@@ -197,6 +199,8 @@ export type DemoMaterialKind = Extract<MaterialKind, 'statement' | 'interview_tr
  */
 export type IntakeSchoolViolenceCaseRequest = {
   counsel_case_id: string
+  /** 상담 건이 목 저장소가 아니라 실제 백엔드에 있을 때 true. 목은 상담 건 존재 확인을 건너뛴다. */
+  external_counsel?: boolean
   demo_material_kinds?: DemoMaterialKind[]
 }
 
