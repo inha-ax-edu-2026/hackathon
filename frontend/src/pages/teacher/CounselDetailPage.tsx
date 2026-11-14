@@ -3,7 +3,6 @@ import { useEffect, useRef } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { useApproveCase, useMarkCaseRead, useTeacherCaseDetail } from '@/api/teacherCounsel.ts'
 import { RiskBadge, StatusBadge } from '@/components/counsel/CaseBadges.tsx'
-import { DocumentsSlot } from '@/components/counsel/detail/DocumentsSlot.tsx'
 import { FormCard } from '@/components/counsel/detail/FormCard.tsx'
 import { SummaryCard } from '@/components/counsel/detail/SummaryCard.tsx'
 import { SuperschoolCards } from '@/components/counsel/detail/SuperschoolCards.tsx'
@@ -14,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.t
 import { ApiError } from '@/lib/api.ts'
 import { HANDOFF_REASON_LABEL } from '@/lib/counsel/labels.ts'
 import { SCHOOL_VIOLENCE_PATH } from '@/lib/schoolViolence/paths.ts'
-import { cn } from '@/lib/utils.ts'
 
 /** 밑줄형 탭: 선택한 탭은 주색 글자와 밑줄. */
 const TAB_TRIGGER =
@@ -26,13 +24,6 @@ function errorMessage(error: unknown) {
     if (typeof detail === 'string') return detail
   }
   return '잠시 후 다시 시도해 주세요.'
-}
-
-const TABS = ['summary', 'documents', 'info'] as const
-type DetailTab = (typeof TABS)[number]
-
-function isDetailTab(value: string | null): value is DetailTab {
-  return TABS.includes(value as DetailTab)
 }
 
 /** 학폭 상담 상세. 대화 전문은 어디에도 보이지 않는다. */
@@ -91,16 +82,13 @@ function CounselDetailPage() {
     case: counsel,
     summary,
     form,
-    documents,
     school_violence_case_id,
     school_violence_recommendation,
     school_violence_intake_supported,
   } = data
   const handoff = counsel.handoff
 
-  // 선택한 탭은 `?tab=`에 둔다. 새로고침·링크로 들어와도 같은 탭이 열린다. 서류가 없는 건은 서류 탭이 없다.
-  const tab: DetailTab =
-    isDetailTab(tabParam) && (tabParam !== 'documents' || documents) ? tabParam : 'summary'
+  const tab = tabParam === 'info' ? 'info' : 'summary'
   const selectTab = (next: string) =>
     setSearchParams(
       (params) => {
@@ -110,8 +98,6 @@ function CounselDetailPage() {
       },
       { replace: true },
     )
-  const selectedDocs = documents?.items.filter((doc) => doc.selected) ?? []
-  const approvedDocs = selectedDocs.filter((doc) => doc.approved)
 
   return (
     <>
@@ -131,15 +117,7 @@ function CounselDetailPage() {
         }
         actions={
           counsel.status === 'awaiting_approval' && (
-            <Button
-              disabled={approve.isPending}
-              onClick={() =>
-                approve.mutate(id, {
-                  // 승인하면 바로 사후 서류 작성으로 이어진다.
-                  onSuccess: () => documents && selectTab('documents'),
-                })
-              }
-            >
+            <Button disabled={approve.isPending} onClick={() => approve.mutate(id)}>
               상담 승인
             </Button>
           )
@@ -156,29 +134,25 @@ function CounselDetailPage() {
             <TabsTrigger value="summary" className={TAB_TRIGGER}>
               상담 요약
             </TabsTrigger>
-            {documents && (
-              <TabsTrigger value="documents" className={TAB_TRIGGER}>
-                사후 서류
-                {selectedDocs.length > 0 && (
-                  <span
-                    className={cn(
-                      'rounded-full px-1.5 text-xs tabular-nums',
-                      documents.all_approved
-                        ? 'bg-success-soft text-success-strong'
-                        : 'bg-muted text-muted-foreground',
-                    )}
-                  >
-                    {approvedDocs.length}/{selectedDocs.length}
-                  </span>
-                )}
-              </TabsTrigger>
-            )}
             <TabsTrigger value="info" className={TAB_TRIGGER}>
               기본 정보
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="summary" className="flex flex-col gap-[18px]">
+          {/* 기본 정보 탭을 열어도 진행 중인 사안 접수의 결과를 처리한다. */}
+          <TabsContent
+            value="summary"
+            forceMount
+            className="flex flex-col gap-[18px] data-[state=inactive]:hidden"
+          >
+            {school_violence_intake_supported && (
+              <IntakeCard
+                key={id}
+                counselCaseId={id}
+                schoolViolenceCaseId={school_violence_case_id}
+                recommendation={school_violence_recommendation}
+              />
+            )}
             {summary && <SummaryCard summary={summary} keywords={counsel.detected_keywords} />}
             {form && <FormCard form={form} />}
             {!summary && !form && (
@@ -187,24 +161,6 @@ function CounselDetailPage() {
               </section>
             )}
           </TabsContent>
-
-          {documents && (
-            // 탭을 옮겨도 저장 안 한 초안과 진행 표시가 남도록 숨기기만 한다.
-            <TabsContent
-              value="documents"
-              forceMount
-              className="flex flex-col gap-[18px] data-[state=inactive]:hidden"
-            >
-              {school_violence_intake_supported && (
-                <IntakeCard
-                  counselCaseId={id}
-                  schoolViolenceCaseId={school_violence_case_id}
-                  recommendation={school_violence_recommendation}
-                />
-              )}
-              <DocumentsSlot caseId={id} documents={documents} />
-            </TabsContent>
-          )}
 
           <TabsContent value="info" className="flex flex-col gap-[18px]">
             <SuperschoolCards counsel={counsel} form={form} />

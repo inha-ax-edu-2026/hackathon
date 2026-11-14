@@ -30,7 +30,7 @@ function SchoolViolenceCases() {
           <Link to={SCHOOL_VIOLENCE_PATH} className="text-primary underline underline-offset-2">
             학폭 상담 관리
           </Link>
-          에서 상담 건을 열고 「사후 서류」 탭의 「학폭 사안으로 접수」를 눌러 주세요.
+          에서 상담 건을 열고 「상담 요약」의 「학폭 사안으로 접수」를 눌러 주세요.
         </p>
       </section>
     )
