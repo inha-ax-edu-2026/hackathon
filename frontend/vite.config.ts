@@ -18,6 +18,6 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
     setupFiles: ['src/test/setup.ts'],
     // Node의 fetch는 상대 경로를 못 쓰므로 테스트에서만 절대 주소를 준다. 목 핸들러도 같은 주소를 쓴다.
-    env: { VITE_API_BASE_URL: 'http://localhost:5173' },
+    env: { VITE_API_BASE_URL: 'http://localhost:5173', VITE_USE_MOCK: 'true' },
   },
 })

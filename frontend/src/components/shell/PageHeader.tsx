@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { BackendConnectionButton } from '@/components/counsel/BackendConnection.tsx'
 import { cn } from '@/lib/utils.ts'
 import { useShell } from './shellContext.ts'
 
@@ -18,7 +19,10 @@ export function PageHeader({ title, description, back, actions }: PageHeaderProp
     <header className="border-b bg-background px-8 pt-5 pb-6">
       <div className="mb-3 flex min-h-5 items-center justify-between gap-4 text-sm">
         <div className="text-muted-foreground">{back}</div>
-        {shell && <span className="text-secondary-foreground">{shell.identity}</span>}
+        <div className="flex items-center gap-3">
+          {shell && <span className="text-secondary-foreground">{shell.identity}</span>}
+          <BackendConnectionButton />
+        </div>
       </div>
       <div className="flex items-end justify-between gap-4">
         <div className="space-y-1">

@@ -1,5 +1,9 @@
 import { ExternalLink, GraduationCap, Presentation, RotateCcw } from 'lucide-react'
 import { useResetDemo } from '@/api/demo.ts'
+import {
+  BackendConnectionButton,
+  useBackendConnection,
+} from '@/components/counsel/BackendConnection.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { STUDENT_COUNSEL_PATH, TEACHER_COUNSEL_PATH } from '@/lib/counsel/paths.ts'
 
@@ -21,6 +25,7 @@ const SCREENS = [
 /** 시연 런처(`/`). 발표자가 학생·교사 화면을 새 탭으로 열고, 시연 상태를 시드로 되돌린다. */
 function DemoLauncherPage() {
   const reset = useResetDemo()
+  const connection = useBackendConnection()
 
   return (
     <section className="mx-auto flex max-w-xl flex-col gap-6 py-12">
@@ -29,6 +34,20 @@ function DemoLauncherPage() {
         <p className="text-muted-foreground">
           학생 화면과 교사 화면을 각각 새 탭으로 열어 나란히 띄워 주세요.
         </p>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 rounded-xl border bg-card p-5">
+        <div className="space-y-1">
+          <p className="font-semibold">
+            {connection.mode === 'mock' ? '가상 시연 데이터 사용 중' : '백엔드 연결됨'}
+          </p>
+          <p className="break-all text-sm text-muted-foreground">
+            {connection.mode === 'backend'
+              ? `${connection.baseUrl} · ${connection.aiMode === 'baze' ? connection.model : '서버 모의 응답'}`
+              : '실제 API 연결은 연결 설정에서 선택하세요.'}
+          </p>
+        </div>
+        <BackendConnectionButton />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">

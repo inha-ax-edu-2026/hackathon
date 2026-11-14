@@ -2,6 +2,7 @@ import { ChevronLeft } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { useApproveCase, useMarkCaseRead, useTeacherCaseDetail } from '@/api/teacherCounsel.ts'
+import { useBackendConnection } from '@/components/counsel/BackendConnection.tsx'
 import { RiskBadge, StatusBadge } from '@/components/counsel/CaseBadges.tsx'
 import { DocumentsSlot } from '@/components/counsel/detail/DocumentsSlot.tsx'
 import { FormCard } from '@/components/counsel/detail/FormCard.tsx'
@@ -44,6 +45,7 @@ const backLink = (
 /** 상담 건 상세(`/teacher/manage-apply/counsel/:id`). 대화 전문은 어디에도 보이지 않는다. */
 function CounselDetailPage() {
   const { id = '' } = useParams()
+  const connection = useBackendConnection()
   const { data, isPending, error } = useTeacherCaseDetail(id)
   const markRead = useMarkCaseRead()
   const approve = useApproveCase()
@@ -183,6 +185,26 @@ function CounselDetailPage() {
           {documents && (
             // 탭을 옮겨도 저장 안 한 초안과 진행 표시가 남도록 숨기기만 한다.
             <TabsContent value="documents" forceMount className="data-[state=inactive]:hidden">
+              {connection.mode === 'backend' && (
+                <section className="mb-[18px] flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-5">
+                  <div>
+                    <p className="font-semibold">학교폭력 서류 초안</p>
+                    <p className="text-sm text-muted-foreground">
+                      이전 상담·진술서·개별 면담으로 보고서 1-3·2-4를 작성해요. 작업실에서 교사
+                      접속키를 다시 입력하세요.
+                    </p>
+                  </div>
+                  <Button variant="outline" asChild>
+                    <a
+                      href={`${connection.baseUrl}/document-demo?case_id=${encodeURIComponent(id)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      서류 작업실 열기
+                    </a>
+                  </Button>
+                </section>
+              )}
               <DocumentsSlot caseId={id} documents={documents} />
             </TabsContent>
           )}

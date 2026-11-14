@@ -29,7 +29,7 @@ export const TEACHER_CASES_POLL_MS = 1500
 export function useTeacherCases() {
   return useQuery({
     queryKey: teacherCasesKey,
-    queryFn: () => apiFetch<CaseListResponse>(BASE),
+    queryFn: ({ signal }) => apiFetch<CaseListResponse>(BASE, { signal }),
     select: (data) => data.cases,
     refetchInterval: TEACHER_CASES_POLL_MS,
     // 학생 탭과 교사 탭을 나란히 띄운 시연에서 가려진 탭도 알림을 받아야 한다.
@@ -47,7 +47,7 @@ export const teacherCaseDetailKey = (id: string) => ['teacherCounsel', 'detail',
 export function useTeacherCaseDetail(id: string) {
   return useQuery({
     queryKey: teacherCaseDetailKey(id),
-    queryFn: () => apiFetch<TeacherCaseDetailResponse>(`${BASE}/${id}`),
+    queryFn: ({ signal }) => apiFetch<TeacherCaseDetailResponse>(`${BASE}/${id}`, { signal }),
     // 없는 건(404)은 다시 시도해도 같다.
     retry: (count, error) => !(error instanceof ApiError && error.status === 404) && count < 1,
     // 승인·서류 변경이 다른 탭에서 일어나도 따라오게 한다.

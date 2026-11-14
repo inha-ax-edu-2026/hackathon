@@ -1,7 +1,7 @@
 import { HttpResponse } from 'msw'
 import type { ApiErrorBody } from '@/api/counselTypes.ts'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '')
 
 /** 목 핸들러 경로. apiFetch와 같은 기본 주소를 붙여 브라우저·테스트 모두에서 맞물리게 한다. */
 export function apiUrl(path: string) {

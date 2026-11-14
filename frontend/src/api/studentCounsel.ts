@@ -23,7 +23,7 @@ export const studentCounselKeys = {
 export function useStudentCases() {
   return useQuery({
     queryKey: studentCounselKeys.list(),
-    queryFn: () => apiFetch<CaseListResponse>('/api/student/counsel/cases'),
+    queryFn: ({ signal }) => apiFetch<CaseListResponse>('/api/student/counsel/cases', { signal }),
     // 목록 화면은 들어올 때마다 최신 상태를 본다(다른 탭의 승인 등이 반영된다).
     staleTime: 0,
   })
@@ -33,7 +33,8 @@ export function useStudentCases() {
 export function useStudentCase(id: string) {
   return useQuery({
     queryKey: studentCounselKeys.detail(id),
-    queryFn: () => apiFetch<StudentCaseDetailResponse>(`/api/student/counsel/cases/${id}`),
+    queryFn: ({ signal }) =>
+      apiFetch<StudentCaseDetailResponse>(`/api/student/counsel/cases/${id}`, { signal }),
     // 진행 중이 아니면(전환·종료) 교사 승인 같은 상태 변화를 다른 탭에서 받아 온다.
     refetchInterval: (query) =>
       query.state.data && query.state.data.case.status !== 'in_progress' ? 1500 : false,
@@ -90,7 +91,13 @@ export function useSendMessage(id: string) {
       patchDetail((detail) => ({
         ...detail,
         case: updated,
-        messages: [...detail.messages, student_message, ...(bot_message ? [bot_message] : [])],
+        messages: [
+          ...new Map(
+            [...detail.messages, student_message, ...(bot_message ? [bot_message] : [])].map(
+              (message) => [message.id, message],
+            ),
+          ).values(),
+        ],
       })),
     onError: () => queryClient.invalidateQueries({ queryKey: studentCounselKeys.detail(id) }),
   })
