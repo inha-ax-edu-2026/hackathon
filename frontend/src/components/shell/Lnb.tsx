@@ -12,7 +12,6 @@ export type LnbMenuItem = {
 }
 
 type LnbProps = {
-  homeTo: string
   /** 프로필에 표시할 이름 */
   name: string
   menu: LnbMenuItem[]
@@ -24,14 +23,14 @@ const itemClass =
   'flex size-13 flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-medium text-secondary-foreground transition-colors'
 
 /** 슈퍼스쿨식 접힌 왼쪽 메뉴(LNB): 로고 · 프로필 · 알림 종 · 전체 메뉴 · 퀵메뉴. */
-export function Lnb({ homeTo, name, menu, bell }: LnbProps) {
+export function Lnb({ name, menu, bell }: LnbProps) {
   return (
     <nav
       aria-label="주 메뉴"
       className="sticky top-0 flex h-svh w-22 shrink-0 flex-col items-center gap-3 border-r bg-secondary py-4 print:hidden"
     >
       <Link
-        to={homeTo}
+        to="/"
         aria-label="홈"
         className="mt-4 flex h-8 w-12 shrink-0 items-center justify-center rounded-md text-primary"
       >
