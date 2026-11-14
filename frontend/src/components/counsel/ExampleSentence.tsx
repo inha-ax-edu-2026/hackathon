@@ -7,7 +7,7 @@ type ExampleSentenceProps = {
   disabled?: boolean
 }
 
-/** 음성이 안 될 때 눌러 입력창에 채우는 예시 문장. 보내기는 따로 눌러야 한다. */
+/** 누르면 바로 전송하는 예시 문장. */
 export function ExampleSentence({ text, onPick, disabled }: ExampleSentenceProps) {
   return (
     <div className="flex items-center gap-2 text-sm">

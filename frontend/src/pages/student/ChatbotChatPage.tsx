@@ -104,12 +104,13 @@ function ChatbotChatPage() {
   }
 
   const send = (text: string) => {
+    if (busy) return
     const previous = lastRequest.current
     const requestId = previous?.text === text ? previous.requestId : crypto.randomUUID()
     lastRequest.current = { text, requestId }
     voice.cancel()
     voice.dismissError()
-    setDraft('')
+    setDraft((current) => (current.trim() === text ? '' : current))
     sendMessage.mutate(
       { text, request_id: requestId },
       {
@@ -222,15 +223,13 @@ function ChatbotChatPage() {
                   setDraft(value)
                 }}
                 onSubmit={send}
-                // 응답을 기다리는 동안에도 입력창·예시 문장·말하기는 그대로 두고 보내기만 막는다.
+                // 응답을 기다리는 동안에도 입력과 말하기는 가능하고, 전송만 막는다.
                 sending={busy}
                 suggestions={
                   <ExampleSentence
                     text={DEMO_LINES[studentTurns % DEMO_LINES.length]}
-                    onPick={(text) => {
-                      voice.cancel()
-                      setDraft(text)
-                    }}
+                    onPick={send}
+                    disabled={busy}
                   />
                 }
                 actions={

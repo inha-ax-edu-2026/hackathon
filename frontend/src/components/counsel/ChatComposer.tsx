@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button.tsx'
 import { Textarea } from '@/components/ui/textarea.tsx'
 
 type ChatComposerProps = {
-  /** 입력 중인 글. 음성 인식 결과나 예시 문장도 이 값으로 채워 넣는다. */
+  /** 입력 중인 글. 음성 인식 결과도 이 값으로 채워 넣는다. */
   value: string
   onChange: (value: string) => void
   /** 비어 있지 않은 글을 보낼 때 부른다. 비우는 일은 부르는 쪽이 한다. */
