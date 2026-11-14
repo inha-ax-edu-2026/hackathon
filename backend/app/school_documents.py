@@ -6,13 +6,12 @@ import time
 from copy import deepcopy
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError
 
 from app.archive import encode, decode, now
 from app.counsel import validate_wav, stt_result
 from app.gateway import Gateway
-from app.teacher import require_teacher
 
 SOURCE_LABELS = {"history": "학생의 이전 AI 상담 이력", "statements": "관련 학생별 진술서", "interview": "사안 처리 중 개별 면담 전사", "admin": "가상 학생·행정 정보"}
 SOURCES = {
@@ -101,7 +100,7 @@ class Save(Input):
     fields: list[FieldEdit] = Field(max_length=40)
 
 
-router = APIRouter(prefix="/api/teacher/document-drafts", tags=["학교폭력 서류 초안 · 교사 검토"], dependencies=[Depends(require_teacher)])
+router = APIRouter(prefix="/api/teacher/document-drafts", tags=["학교폭력 서류 초안 · 교사 검토"])
 
 
 def init_documents(archive):
@@ -252,7 +251,7 @@ async def save(draft_id: str, body: Save, request: Request):
     return draft
 
 
-audio_router = APIRouter(prefix="/api/teacher/interview-transcriptions",tags=["개별 면담 WAV 전사"],dependencies=[Depends(require_teacher)])
+audio_router = APIRouter(prefix="/api/teacher/interview-transcriptions",tags=["개별 면담 WAV 전사"])
 
 
 def jobs(request):

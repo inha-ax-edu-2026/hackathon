@@ -27,6 +27,7 @@ class Settings:
     stt_model: str = "stt-async-v6"
     tts_model: str = "gemini-3.8-flash-tts"
     tts_voice: str = "Sulafat"
+    # 이전 설정 객체 호환용. 접속키 인증에는 사용하지 않는다.
     teacher_token: str = field(default="", repr=False)
     database_path: Path = BACKEND_ROOT / "data" / "safepath.sqlite3"
     risk_threshold: int = 3
@@ -46,8 +47,6 @@ class Settings:
             raise ValueError("AI_MODE는 mock 또는 baze로 설정하세요.")
         if self.frontend_ai_mode not in {"mock", "baze"}:
             raise ValueError("FRONTEND_AI_MODE는 mock 또는 baze로 설정하세요.")
-        if self.frontend_access_token and len(self.frontend_access_token) < 24:
-            raise ValueError("FRONTEND_ACCESS_TOKEN은 24자 이상이어야 합니다.")
         if self.public_base_url:
             public = urlsplit(self.public_base_url)
             if (public.scheme != "https" or not public.hostname or public.username or public.password
@@ -56,8 +55,6 @@ class Settings:
         if self.shared_server_mode:
             if not self.public_base_url or not self.frontend_demo_enabled:
                 raise ValueError("공유 서버에는 PUBLIC_BASE_URL과 FRONTEND_DEMO_ENABLED=true가 필요합니다.")
-            if not self.frontend_access_token or not self.teacher_token:
-                raise ValueError("공유 서버에는 프론트 연동키와 교사 접속키가 모두 필요합니다.")
             if self.frontend_ai_mode == "baze" and not self.api_key:
                 raise ValueError("실제 고성능 모델 공유 서버에는 BAZE_API_KEY가 필요합니다.")
         parsed = urlsplit(self.base_url)
@@ -76,8 +73,6 @@ class Settings:
             raise ValueError("BAZE_TIMEOUT_SECONDS는 양수여야 합니다.")
         if self.risk_threshold != 3:
             raise ValueError("현재 교사 보고 기준은 서로 다른 위험 발언 3회입니다.")
-        if self.teacher_token and len(self.teacher_token) < 16:
-            raise ValueError("TEACHER_ACCESS_TOKEN은 16자 이상이어야 합니다.")
         if not self.allowed_hosts or any(not re.fullmatch(r"[a-zA-Z0-9.\[\]:-]+", host) for host in self.allowed_hosts):
             raise ValueError("ALLOWED_HOSTS에는 접속할 호스트 이름만 쉼표로 구분해 입력하세요.")
         if not Path(self.database_path).resolve().is_relative_to(BACKEND_ROOT.resolve()):
@@ -126,10 +121,8 @@ class Settings:
             stt_model=read("BAZE_STT_MODEL", defaults.stt_model),
             tts_model=read("BAZE_TTS_MODEL", defaults.tts_model),
             tts_voice=read("BAZE_TTS_VOICE", defaults.tts_voice),
-            teacher_token=read("TEACHER_ACCESS_TOKEN"),
             frontend_demo_enabled=read("FRONTEND_DEMO_ENABLED", "false").lower() == "true",
             frontend_ai_mode=read("FRONTEND_AI_MODE", "mock"),
-            frontend_access_token=read("FRONTEND_ACCESS_TOKEN"),
             shared_server_mode=read("SHARED_SERVER_MODE", "false").lower() == "true",
             public_base_url=read("PUBLIC_BASE_URL").rstrip("/"),
             allowed_hosts=tuple(h.strip() for h in read("ALLOWED_HOSTS", ",".join(defaults.allowed_hosts)).split(",") if h.strip()),

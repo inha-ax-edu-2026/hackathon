@@ -1,23 +1,9 @@
-"""교사용 보고함·상담 기록 API. 학생 세션 토큰과 별도의 교사 키가 필요하다."""
+"""교사용 보고함·상담 기록 API. 별도 접속키 없이 조회한다."""
 
-import secrets
-
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.security import APIKeyHeader
+from fastapi import APIRouter, HTTPException, Query, Request
 
 
-teacher_access_header = APIKeyHeader(name="X-Teacher-Key", scheme_name="TeacherAccess", auto_error=False)
-
-
-async def require_teacher(request: Request, x_teacher_key: str | None = Depends(teacher_access_header)):
-    expected = request.app.state.settings.teacher_token
-    if not expected:
-        raise HTTPException(503, "교사 접속키가 설정되지 않았습니다. 서버 설정을 확인하세요.")
-    if not x_teacher_key or not secrets.compare_digest(x_teacher_key.encode(), expected.encode()):
-        raise HTTPException(401, "교사 접속키를 확인하세요.")
-
-
-router = APIRouter(prefix="/api/teacher", tags=["교사 보고·상담 보관"], dependencies=[Depends(require_teacher)])
+router = APIRouter(prefix="/api/teacher", tags=["교사 보고·상담 보관"])
 
 
 @router.get("/reports", summary="교사 보고 목록 (긴급·미확인 우선)")

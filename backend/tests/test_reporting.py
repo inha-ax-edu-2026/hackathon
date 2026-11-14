@@ -162,11 +162,11 @@ class ReportingTests(unittest.TestCase):
         self.assertNotIn(self.session["session_token"], json.dumps(record))
         self.assertNotIn("test-secret-key", json.dumps(record))
 
-    def test_teacher_authentication_and_student_isolation(self):
+    def test_teacher_reports_are_open_without_access_keys(self):
         self.precheck("나 지금 죽을거야")
-        self.assertEqual(self.client.get("/api/teacher/reports").status_code, 401)
-        self.assertEqual(self.client.get("/api/teacher/reports", headers=self.headers).status_code, 401)
-        self.assertEqual(self.client.get("/api/teacher/reports", headers={"X-Teacher-Key": "wrong-key"}).status_code, 401)
+        self.assertEqual(self.client.get("/api/teacher/reports").status_code, 200)
+        self.assertEqual(self.client.get("/api/teacher/reports", headers=self.headers).status_code, 200)
+        self.assertEqual(self.client.get("/api/teacher/reports", headers={"X-Teacher-Key": "wrong-key"}).status_code, 200)
         result = self.client.get("/api/teacher/conversations/" + self.session["session_id"], headers=self.teacher_headers)
         self.assertEqual(result.status_code, 200)
         self.assertNotIn("test-teacher-access-key-0001", result.text)
@@ -207,16 +207,16 @@ class ReportingTests(unittest.TestCase):
         self.assertTrue(result["safety"]["reported"])
         self.assertEqual(result["safety"]["risk_count"], 1)
 
-    def test_production_start_generates_private_teacher_key_without_exposing_it(self):
+    def test_normal_start_does_not_generate_access_keys(self):
         configuration = replace(self.app.state.settings, teacher_token="")
         with patch("app.main.Settings.from_env", return_value=configuration), patch("app.main.set_key") as save:
             application = create_app()
             with TestClient(application, base_url="http://127.0.0.1", client=("127.0.0.1", 50101)) as client:
                 generated = application.state.settings.teacher_token
-                self.assertGreaterEqual(len(generated), 16)
-                self.assertEqual(save.call_args.args[1], "TEACHER_ACCESS_TOKEN")
-                self.assertNotIn(generated, client.get("/api/local/settings").text)
-                self.assertEqual(client.get("/api/teacher/reports", headers={"X-Teacher-Key": generated}).status_code, 200)
+                self.assertEqual(generated, "")
+                save.assert_not_called()
+                self.assertFalse(client.get("/health").json()["access_key_required"])
+                self.assertEqual(client.get("/api/teacher/reports").status_code, 200)
 
 
 if __name__ == "__main__":

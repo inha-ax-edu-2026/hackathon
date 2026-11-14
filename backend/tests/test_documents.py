@@ -124,7 +124,7 @@ class DocumentTests(unittest.TestCase):
         self.assertEqual(preflight.headers["access-control-allow-origin"], origin)
         self.assertEqual(self.client.post("/api/local/settings", headers=headers, json={}).status_code, 403)
         self.assertEqual(self.client.post("/api/teacher/document-drafts", headers={**headers, **self.teacher}, json={}).status_code, 403)
-        self.assertEqual(self.client.get("/api/teacher/reports", headers=headers).status_code, 401)
+        self.assertEqual(self.client.get("/api/teacher/reports", headers=headers).status_code, 200)
 
     def test_reset_does_not_delete_actual_archive(self):
         created = self.client.post("/api/counsel/sessions", json={"mode": "mock", "consent": True, "notice_version": "archive-report-v1"}).json()
@@ -146,8 +146,8 @@ class DocumentTests(unittest.TestCase):
             self.assertTrue(d["demo"])
         self.assertEqual(self.calls, [])
 
-    def test_teacher_authentication_and_distinct_sources(self):
-        self.assertEqual(self.client.get("/api/teacher/document-drafts/sources").status_code, 401)
+    def test_teacher_sources_open_without_access_key_and_remain_distinct(self):
+        self.assertEqual(self.client.get("/api/teacher/document-drafts/sources").status_code, 200)
         self.assertEqual(self.client.get("/document-demo").status_code, 200)
         data = self.client.get("/api/teacher/document-drafts/sources", headers=self.teacher).json()
         self.assertIn("이전 상담", data["sources"]["history"])
@@ -287,8 +287,8 @@ class QualityFrontendTests(unittest.TestCase):
         self.assertTrue(r.json()["judgment"]["handed_off"])
         self.assertTrue(r.json()["case"]["chat_open"])
 
-    def test_public_requests_need_integration_auth_and_invalid_quotes_fail(self):
-        self.assertEqual(self.client.get("/api/student/counsel/cases",headers={"X-Frontend-Access":""}).status_code,403)
+    def test_public_requests_work_without_keys_and_invalid_quotes_fail(self):
+        self.assertEqual(self.client.get("/api/student/counsel/cases").status_code,200)
         sid=self.case()
         self.bad_quote=True
         r=self.client.post(f"/api/student/counsel/cases/{sid}/messages",json={"text":"일반 고민","request_id":"bad-quote"})

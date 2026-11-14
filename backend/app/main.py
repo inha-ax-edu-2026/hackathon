@@ -2,7 +2,6 @@
 
 import asyncio
 import os
-import secrets
 import sqlite3
 from contextlib import asynccontextmanager, suppress
 from dataclasses import replace
@@ -26,7 +25,7 @@ from app.counsel import Counsel, router as counsel_router
 from app.gateway import Gateway
 from app.archive import ArchiveStore
 from app.teacher import router as teacher_router
-from app.frontend_demo import DemoStore, router as frontend_demo_router, quality_turn, require_quality_access
+from app.frontend_demo import DemoStore, router as frontend_demo_router, quality_turn
 from app.school_documents import init_documents, router as documents_router, audio_router
 
 STATIC_ROOT = Path(__file__).parent / "static"
@@ -68,10 +67,6 @@ def create_app(
     @asynccontextmanager
     async def lifespan(application: FastAPI):
         effective = config
-        if settings is None and not config.teacher_token:
-            token = secrets.token_urlsafe(32)
-            set_key(str(BACKEND_ROOT / ".env"), "TEACHER_ACCESS_TOKEN", token, quote_mode="always")
-            effective = replace(config, teacher_token=token)
         application.state.settings = effective
         application.state.archive = ArchiveStore(effective.database_path, effective.risk_threshold)
         init_documents(application.state.archive)
@@ -103,7 +98,7 @@ def create_app(
 
     application = FastAPI(
         title="SAFE-PATH 팀 테스트 API" if config.shared_server_mode else "SAFE-PATH 녹음형 상담 비교",
-        description="가상 자료 전용 고성능 상담·요약·서류 초안 API. Authorize에서 연동키/교사키를 입력하세요." if config.shared_server_mode else "고품질형과 가성비형의 익명 AI 사전 상담을 비교합니다.",
+        description="가상 자료 전용 고성능 상담·요약·서류 초안 API. 별도 접속키 없이 바로 테스트합니다." if config.shared_server_mode else "고품질형과 가성비형의 익명 AI 사전 상담을 비교합니다.",
         servers=[{"url": config.public_base_url}] if config.shared_server_mode else None,
         lifespan=lifespan,
     )
@@ -117,7 +112,7 @@ def create_app(
         CORSMiddleware,
         allow_origins=integration_origins,
         allow_methods=["GET", "POST", "PATCH", "DELETE"],
-        allow_headers=["Content-Type", "X-Session-Token", "X-Teacher-Key", "X-Audio-Consent", "X-Frontend-Access"],
+        allow_headers=["Content-Type", "X-Session-Token", "X-Audio-Consent"],
     )
 
     @application.middleware("http")
@@ -224,7 +219,6 @@ def create_app(
 
     @application.post("/api/local/verify-quality", include_in_schema=not config.shared_server_mode, summary="저장된 고성능 모델 한 개로 가상 상담 응답 확인 (사용량 발생)")
     async def verify_quality(request: Request):
-        require_quality_access(request)
         if application.state.quality_probe_busy:
             raise HTTPException(429, "고성능 모델 응답을 확인 중입니다.")
         application.state.quality_probe_busy = True
@@ -249,7 +243,7 @@ def create_app(
             "frontend_demo_enabled": current.frontend_demo_enabled,
             "frontend_ai_mode": current.frontend_ai_mode,
             "quality_model": current.quality_model,
-            "teacher_inbox_configured": bool(current.teacher_token),
+            "access_key_required": False,
             "ai_mode": current.mode,
             "baze_configured": not current.missing_settings,
             "missing_settings": current.missing_settings,
