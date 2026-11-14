@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CaseListResponse, TeacherCaseDetailResponse } from '@/api/counselTypes.ts'
+import { openSchoolViolenceWorkspace } from '@/api/schoolViolence.ts'
 import type {
   DocumentField,
   IntakeSchoolViolenceCaseRequest,
@@ -108,6 +109,17 @@ describe('사안 접수', () => {
 })
 
 describe('중복 접수와 상담 건 연결', () => {
+  it('서류 작업실을 다시 열면 기존 사안을 재사용하고 상담 연결을 유지한다', async () => {
+    const counselId = await victimCounselId()
+    const first = await openSchoolViolenceWorkspace(counselId)
+    const reopened = await openSchoolViolenceWorkspace(counselId)
+
+    expect(reopened.case.id).toBe(first.case.id)
+    expect(reopened.case.counsel_case_ids).toEqual([counselId])
+    expect((await counselDetail(counselId)).school_violence_case_id).toBe(first.case.id)
+    expect((await apiFetch<SchoolViolenceCaseListResponse>(SV)).cases).toHaveLength(1)
+  })
+
   it('같은 상담 건을 다시 접수하면 거절되고 사안은 늘지 않는다', async () => {
     const counselId = await victimCounselId()
     await intake(counselId)

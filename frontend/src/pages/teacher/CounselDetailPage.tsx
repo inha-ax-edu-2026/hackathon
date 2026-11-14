@@ -1,8 +1,8 @@
 import { ChevronLeft } from 'lucide-react'
 import { useEffect, useRef } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { useOpenSchoolViolenceWorkspace } from '@/api/schoolViolence.ts'
 import { useApproveCase, useMarkCaseRead, useTeacherCaseDetail } from '@/api/teacherCounsel.ts'
-import { useBackendConnection } from '@/components/counsel/BackendConnection.tsx'
 import { RiskBadge, StatusBadge } from '@/components/counsel/CaseBadges.tsx'
 import { DocumentsSlot } from '@/components/counsel/detail/DocumentsSlot.tsx'
 import { FormCard } from '@/components/counsel/detail/FormCard.tsx'
@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.t
 import { ApiError } from '@/lib/api.ts'
 import { HANDOFF_REASON_LABEL } from '@/lib/counsel/labels.ts'
 import { TEACHER_COUNSEL_PATH } from '@/lib/counsel/paths.ts'
+import { schoolViolenceCasePath } from '@/lib/schoolViolence/paths.ts'
 import { cn } from '@/lib/utils.ts'
 
 /** 밑줄형 탭: 선택한 탭은 주색 글자와 밑줄. */
@@ -39,7 +40,8 @@ function isDetailTab(value: string | null): value is DetailTab {
 /** 상담 건 상세(`/teacher/manage-apply/counsel/:id`). 대화 전문은 어디에도 보이지 않는다. */
 function CounselDetailPage({ listPath = TEACHER_COUNSEL_PATH }: { listPath?: string }) {
   const { id = '' } = useParams()
-  const connection = useBackendConnection()
+  const navigate = useNavigate()
+  const workspace = useOpenSchoolViolenceWorkspace()
   const { data, isPending, error } = useTeacherCaseDetail(id)
   const markRead = useMarkCaseRead()
   const approve = useApproveCase()
@@ -197,25 +199,31 @@ function CounselDetailPage({ listPath = TEACHER_COUNSEL_PATH }: { listPath?: str
               forceMount
               className="flex flex-col gap-[18px] data-[state=inactive]:hidden"
             >
-              {connection.mode === 'backend' && (
-                <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-5">
-                  <div>
-                    <p className="font-semibold">학교폭력 서류 초안</p>
-                    <p className="text-sm text-muted-foreground">
-                      이전 상담·진술서·개별 면담으로 보고서 1-3·2-4를 작성해요. 별도 접속키 없이
-                      작업실을 바로 열 수 있습니다.
-                    </p>
-                  </div>
-                  <Button variant="outline" asChild>
-                    <a
-                      href={`${connection.baseUrl}/document-demo?case_id=${encodeURIComponent(id)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      서류 작업실 열기
-                    </a>
-                  </Button>
-                </section>
+              <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-5">
+                <div>
+                  <p className="font-semibold">학교폭력 서류 초안</p>
+                  <p className="text-sm text-muted-foreground">
+                    이전 상담·진술서·개별 면담으로 보고서 1-3·2-4를 작성해요. 별도 접속키 없이
+                    작업실을 바로 열 수 있습니다.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  disabled={workspace.isPending}
+                  onClick={() =>
+                    workspace.mutate(id, {
+                      onSuccess: ({ case: created }) =>
+                        navigate(`${schoolViolenceCasePath(created.id)}?tab=documents`),
+                    })
+                  }
+                >
+                  {workspace.isPending ? '작업실 연결 중…' : '서류 작업실 열기'}
+                </Button>
+              </section>
+              {workspace.isError && (
+                <p role="alert" className="text-sm text-destructive">
+                  {errorMessage(workspace.error)}
+                </p>
               )}
               {school_violence_intake_supported && (
                 <IntakeCard

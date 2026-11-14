@@ -76,7 +76,7 @@ export const emptyStudentDraft = (): StudentDraft => ({
   grade: '',
   class: '',
   number: '',
-  gender: 'male',
+  gender: 'unknown',
   role: 'offender',
   notified: false,
   noticeAt: '',

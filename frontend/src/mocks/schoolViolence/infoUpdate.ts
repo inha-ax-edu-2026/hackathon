@@ -34,7 +34,7 @@ const positiveInt = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value) && value >= 1
 
 const ROLES = ['victim', 'offender', 'witness']
-const GENDERS = ['male', 'female']
+const GENDERS = ['male', 'female', 'unknown']
 const EXCEPTION_IDS = SEPARATION_EXCEPTIONS.map((option) => option.id)
 
 function parseNotice(value: unknown): GuardianNotice | null {

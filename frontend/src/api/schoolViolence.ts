@@ -11,6 +11,7 @@ import type {
   UpdateSchoolViolenceInfoRequest,
 } from '@/api/schoolViolenceTypes.ts'
 import { ApiError, apiFetch } from '@/lib/api.ts'
+import { fetchTeacherCaseDetail } from './teacherCounsel.ts'
 
 /**
  * 교사 학교폭력 사안 API 훅 (`/api/teacher/school-violence/...`, 제안 계약).
@@ -19,6 +20,47 @@ import { ApiError, apiFetch } from '@/lib/api.ts'
  */
 
 const BASE = '/api/teacher/school-violence/cases'
+
+/** 서류 작업실 열기. 이미 연결한 사안은 재사용하며 모의 API로 대체하지 않는다. */
+export async function openSchoolViolenceWorkspace(counselCaseId: string) {
+  const detail = await fetchTeacherCaseDetail(counselCaseId)
+  if (detail.school_violence_case_id) {
+    return apiFetch<SchoolViolenceCaseResponse>(`${BASE}/${detail.school_violence_case_id}`)
+  }
+  try {
+    return await apiFetch<SchoolViolenceCaseResponse>(BASE, {
+      method: 'POST',
+      body: { counsel_case_id: counselCaseId } satisfies IntakeSchoolViolenceCaseRequest,
+    })
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 409) {
+      const latest = await fetchTeacherCaseDetail(counselCaseId)
+      if (latest.school_violence_case_id) {
+        return apiFetch<SchoolViolenceCaseResponse>(`${BASE}/${latest.school_violence_case_id}`)
+      }
+    }
+    if (error instanceof ApiError && error.status === 404) {
+      throw new ApiError(503, {
+        detail: '서류 작업실 연동을 적용하려면 백엔드 서버를 최신 코드로 재시작해 주세요.',
+      })
+    }
+    throw error
+  }
+}
+
+export function useOpenSchoolViolenceWorkspace() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: openSchoolViolenceWorkspace,
+    onSuccess: (data) => {
+      queryClient.setQueryData(schoolViolenceCaseKey(data.case.id), data)
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: schoolViolenceCasesKey }),
+        queryClient.invalidateQueries({ queryKey: ['teacherCounsel'] }),
+      ])
+    },
+  })
+}
 
 /** 사안 목록 query key */
 export const schoolViolenceCasesKey = ['schoolViolence', 'cases'] as const

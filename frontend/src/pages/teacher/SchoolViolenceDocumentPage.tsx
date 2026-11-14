@@ -117,7 +117,7 @@ function SchoolViolenceDocumentPage() {
     setReviewError(null)
     try {
       // 요청이 빨리 끝나도 진행 표시는 끝까지 보여준다.
-      await Promise.all([generate.mutateAsync({}), sleep(DRAFT_MIN_MS)])
+      await Promise.all([generate.mutateAsync({ external_consent: true }), sleep(DRAFT_MIN_MS)])
       setSelectedId(null)
     } catch {
       // 오류 문구는 generate.error로 보인다.
@@ -253,6 +253,10 @@ function EmptyDraft({
         <p className="text-sm leading-relaxed text-secondary-foreground">
           「AI 초안 만들기」를 누르면 아래 사안 자료를 근거로 양식이 채워져요. AI가 쓴 칸은 파랑,
           교사가 판단·입력하는 칸은 주황(비어 있음)으로 보여요.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          실제 백엔드 연결에서는 선택한 가상 자료가 고성능 AI로 전송돼요. 초안은 저장한 뒤 교사가
+          확인하며, 생성만으로 결재·외부 제출하지 않아요.
         </p>
         <ul className="flex flex-wrap gap-2">
           {materials.map((material) => (

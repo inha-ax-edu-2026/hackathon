@@ -26,7 +26,7 @@ export type RelatedStudent = {
   grade: number
   class: number
   number: number
-  gender: 'male' | 'female'
+  gender: 'male' | 'female' | 'unknown'
   role: RelatedRole
   guardian_notice: GuardianNotice
   /** 장애학생·이주배경학생 등 비고. 없으면 null. */
@@ -208,7 +208,11 @@ export type SchoolViolenceCaseResponse = { case: SchoolViolenceCase }
  * 「AI 초안 만들기」. 이미 초안이 있으면 고친 내용이 지워지므로 overwrite_confirmed: true가 있어야 한다.
  * 확인 없이 요청하면 409. 다시 만들면 승인이 풀려 「검토 중」이 된다.
  */
-export type GenerateDocumentDraftRequest = { overwrite_confirmed?: boolean }
+export type GenerateDocumentDraftRequest = {
+  overwrite_confirmed?: boolean
+  /** 선택한 가상 자료가 외부 고성능 AI로 전송된다는 안내를 확인한 뒤 보낸다. */
+  external_consent?: boolean
+}
 
 /** GET .../documents/{form_id} · POST .../documents/{form_id}/draft */
 export type SchoolViolenceDocumentResponse = { document: SchoolViolenceDocument }
