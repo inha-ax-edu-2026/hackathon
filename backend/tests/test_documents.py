@@ -84,6 +84,10 @@ class DocumentTests(unittest.TestCase):
         detail = self.client.get("/api/teacher/counsel/cases/" + sid).json()
         self.assertNotIn("messages", detail)
         self.assertEqual(len(detail["documents"]["items"]), 4)
+        self.assertIsNone(detail["school_violence_case_id"])
+        self.assertEqual(detail["school_violence_recommendation"],
+            {"recommended": True, "keywords": ["괴롭힘·따돌림"]})
+        self.assertFalse(detail["school_violence_intake_supported"])
         self.assertEqual(self.client.post("/api/teacher/counsel/cases/" + sid + "/approve").json()["case"]["status"], "awaiting_counsel")
         self.assertEqual(self.client.post(path + "/messages", json={"text": "다른 내용", "request_id": "turn-0"}).status_code, 409)
         self.assertEqual(self.calls, [])
@@ -113,6 +117,27 @@ class DocumentTests(unittest.TestCase):
         self.assertFalse(closed["chat_open"])
         self.assertEqual(closed["status"],"awaiting_approval")
         self.assertEqual(self.client.post(path+"/messages",json={"text":"추가","request_id":"closed"}).status_code,409)
+
+    def test_existing_urgent_case_remains_readable_after_server_restart(self):
+        sid = self.case()
+        self.client.post(f"/api/student/counsel/cases/{sid}/messages",
+            json={"text": "나 지금 죽을 거야", "request_id": "legacy-urgent"})
+        path = f"/api/teacher/counsel/cases/{sid}"
+        self.client.patch(path + "/documents/counsel_log", json={"draft": "교사가 보관한 초안"})
+        before = self.client.get(path).json()
+        # 저장 당시 새 필드가 없던 기존 SQLite 상담도 초기화 없이 다시 연다.
+        application = create_app(self.config)
+        with TestClient(application, base_url="http://127.0.0.1") as client:
+            response = client.get(path)
+            self.assertEqual(response.status_code, 200)
+            detail = response.json()
+            for key in ("case", "summary", "form", "documents"):
+                self.assertEqual(detail[key], before[key])
+            self.assertEqual(detail["school_violence_recommendation"], {"recommended": False, "keywords": []})
+            self.assertIsNone(detail["school_violence_case_id"])
+            self.assertFalse(detail["school_violence_intake_supported"])
+            self.assertEqual(detail["case"]["risk"], "high")
+            self.assertNotIn("messages", detail)
 
     def test_cross_origin_is_limited_to_isolated_demo_routes(self):
         origin = "https://hackathon-tau-mocha.vercel.app"
