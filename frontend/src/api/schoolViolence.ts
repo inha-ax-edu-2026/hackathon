@@ -48,20 +48,6 @@ export async function openSchoolViolenceWorkspace(counselCaseId: string) {
   }
 }
 
-export function useOpenSchoolViolenceWorkspace() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: openSchoolViolenceWorkspace,
-    onSuccess: (data) => {
-      queryClient.setQueryData(schoolViolenceCaseKey(data.case.id), data)
-      return Promise.all([
-        queryClient.invalidateQueries({ queryKey: schoolViolenceCasesKey }),
-        queryClient.invalidateQueries({ queryKey: ['teacherCounsel'] }),
-      ])
-    },
-  })
-}
-
 /** 사안 목록 query key */
 export const schoolViolenceCasesKey = ['schoolViolence', 'cases'] as const
 
