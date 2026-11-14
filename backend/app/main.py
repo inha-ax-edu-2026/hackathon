@@ -76,6 +76,7 @@ def create_app(
         application.state.interview_jobs = {}
         application.state.frontend_case_locks = {}
         application.state.school_case_locks = {}
+        application.state.school_generation_tasks = {}
         application.state.quality_probe_busy = False
         application.state.counsel = Counsel(application.state.archive)
         async with httpx.AsyncClient(
@@ -93,6 +94,10 @@ def create_app(
             try:
                 yield
             finally:
+                pending_documents = list(application.state.school_generation_tasks.values())
+                for task in pending_documents:
+                    task.cancel()
+                await asyncio.gather(*pending_documents, return_exceptions=True)
                 cleanup_task.cancel()
                 with suppress(asyncio.CancelledError):
                     await cleanup_task
@@ -244,6 +249,7 @@ def create_app(
             "shared_server_mode": current.shared_server_mode,
             "counsel_contract": "archive-report-v1",
             "integration_contract": "document-demo-v1",
+            "document_generation_contract": "background-jobs-v1",
             "frontend_demo_enabled": current.frontend_demo_enabled,
             "frontend_ai_mode": current.frontend_ai_mode,
             "quality_model": current.quality_model,

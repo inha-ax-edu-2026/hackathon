@@ -1,8 +1,10 @@
+import { HttpResponse, http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import type { CaseListResponse, TeacherCaseDetailResponse } from '@/api/counselTypes.ts'
-import { openSchoolViolenceWorkspace } from '@/api/schoolViolence.ts'
+import { generateSchoolViolenceDraft, openSchoolViolenceWorkspace } from '@/api/schoolViolence.ts'
 import type {
   DocumentField,
+  DocumentGenerationJob,
   IntakeSchoolViolenceCaseRequest,
   SchoolViolenceCaseListResponse,
   SchoolViolenceCaseResponse,
@@ -11,6 +13,8 @@ import type {
 import { ApiError, apiFetch } from '@/lib/api.ts'
 import { isAiField } from '@/lib/schoolViolence/aiField.ts'
 import { offenderFieldId } from '@/lib/schoolViolence/studentFields.ts'
+import { apiUrl } from '@/mocks/http.ts'
+import { server } from '@/mocks/node.ts'
 
 /** 학교폭력 사안 API 계약(제안, ADR 0002). 접수와 사안 페이지 뼈대(티켓 01)만 다룬다. */
 
@@ -42,6 +46,103 @@ const intake = (counselCaseId: string, extra: Partial<IntakeSchoolViolenceCaseRe
   })
 
 const counselDetail = (id: string) => apiFetch<TeacherCaseDetailResponse>(`${COUNSEL}/${id}`)
+
+describe('중단되지 않는 AI 서류 생성', () => {
+  const job = (caseId: string): DocumentGenerationJob => ({
+    id: 'slow-job',
+    case_id: caseId,
+    form_id: '2-4',
+    status: 'running',
+    created_at: '2026-11-14T04:00:00Z',
+    updated_at: '2026-11-14T04:00:00Z',
+    error: null,
+  })
+
+  it('접수된 작업을 조회해 완성된 서류를 받고 생성 요청은 한 번만 보낸다', async () => {
+    const { case: created } = await intake(await victimCounselId())
+    const path = `${SV}/${created.id}/documents/2-4`
+    const expected = await apiFetch<SchoolViolenceDocumentResponse>(`${path}/draft`, {
+      method: 'POST',
+      body: {},
+    })
+    let posts = 0
+    let polls = 0
+    server.use(
+      http.post(apiUrl(`${path}/draft`), async ({ request }) => {
+        posts += 1
+        expect(await request.json()).toMatchObject({
+          async_generation: true,
+          external_consent: true,
+        })
+        return HttpResponse.json({ job: job(created.id) }, { status: 202 })
+      }),
+      http.get(apiUrl(`${path}/jobs/slow-job`), () => {
+        polls += 1
+        return HttpResponse.json(
+          polls === 1
+            ? { job: job(created.id) }
+            : {
+                job: { ...job(created.id), status: 'completed' },
+                document: expected.document,
+              },
+        )
+      }),
+    )
+    const result = await generateSchoolViolenceDraft(created.id, '2-4', { external_consent: true })
+    expect(result.document).toEqual(expected.document)
+    expect(posts).toBe(1)
+    expect(polls).toBe(2)
+  })
+
+  it('모델 작업의 실패 사유를 일반 연결 오류 대신 전달한다', async () => {
+    const { case: created } = await intake(await victimCounselId())
+    const path = `${SV}/${created.id}/documents/2-4`
+    server.use(
+      http.post(apiUrl(`${path}/draft`), () =>
+        HttpResponse.json({ job: job(created.id) }, { status: 202 }),
+      ),
+      http.get(apiUrl(`${path}/jobs/slow-job`), () =>
+        HttpResponse.json({
+          job: {
+            ...job(created.id),
+            status: 'failed',
+            error: { status: 504, detail: '고성능 모델 응답 대기 시간 초과' },
+          },
+        }),
+      ),
+    )
+    await expect(
+      generateSchoolViolenceDraft(created.id, '2-4', { external_consent: true }),
+    ).rejects.toMatchObject({
+      status: 504,
+      message: '고성능 모델 응답 대기 시간 초과',
+    })
+  })
+
+  it('즉시 완성된 응답도 같은 API로 처리한다', async () => {
+    const { case: created } = await intake(await victimCounselId())
+    const result = await generateSchoolViolenceDraft(created.id, '2-4')
+    expect(result.document.status).toBe('reviewing')
+    expect(result.document.fields.length).toBeGreaterThan(0)
+  })
+
+  it('이전 서버에는 새 API 적용을 위한 재시작을 안내한다', async () => {
+    server.use(
+      http.post(apiUrl(`${SV}/old/documents/2-4/draft`), () =>
+        HttpResponse.json(
+          {
+            detail: [{ loc: ['body', 'async_generation'], type: 'extra_forbidden' }],
+          },
+          { status: 422 },
+        ),
+      ),
+    )
+    await expect(generateSchoolViolenceDraft('old', '2-4')).rejects.toMatchObject({
+      status: 503,
+      message: expect.stringContaining('재시작'),
+    })
+  })
+})
 
 describe('사안 접수', () => {
   it('접수하기 전에는 사안이 없고, 한지우 상담 건은 사안과 연결되어 있지 않다', async () => {

@@ -143,7 +143,7 @@ class Gateway:
             "inference_verified": False,
             "message": "키 인증과 모델 목록 조회를 확인했습니다. 실제 상담·STT·TTS 생성은 별도로 테스트하세요."}
 
-    async def chat(self, model: str, messages: list[dict], schema: dict) -> tuple[str, dict]:
+    async def chat(self, model: str, messages: list[dict], schema: dict, *, timeout_seconds: float | None = None) -> tuple[str, dict]:
         is_claude = model.rsplit("/", 1)[-1].startswith("claude-")
         payload = {
             "model": model, "messages": messages, "stream": False,
@@ -154,7 +154,8 @@ class Gateway:
         }
         if is_claude:
             payload["max_tokens"] = 8192
-        response = await self.request("POST", self.settings.chat_path.rstrip("/") + "/", json=payload)
+        options = {"timeout": timeout_seconds} if timeout_seconds is not None else {}
+        response = await self.request("POST", self.settings.chat_path.rstrip("/") + "/", json=payload, **options)
         body = json_body(response)
         try:
             content = body["choices"][0]["message"]["content"]

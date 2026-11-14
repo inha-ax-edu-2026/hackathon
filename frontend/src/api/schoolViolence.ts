@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   ApproveDocumentRequest,
+  DocumentGenerationJob,
+  DocumentGenerationJobResponse,
   GenerateDocumentDraftRequest,
   IntakeSchoolViolenceCaseRequest,
   SaveDocumentFieldEdit,
@@ -118,7 +120,77 @@ export function useSchoolViolenceDocument(caseId: string, formId: string) {
     queryFn: () =>
       apiFetch<SchoolViolenceDocumentResponse>(`${BASE}/${caseId}/documents/${formId}`),
     select: (data) => data.document,
+    refetchInterval: (query) =>
+      query.state.data?.document.generation_job?.status === 'running' ? 1500 : false,
+    refetchIntervalInBackground: true,
     retry: (count, error) => !(error instanceof ApiError && error.status === 404) && count < 1,
+  })
+}
+
+/** AI 생성 중에는 긴 HTTP 연결 대신 짧은 상태 조회를 이어 간다. */
+export async function generateSchoolViolenceDraft(
+  caseId: string,
+  formId: string,
+  request: GenerateDocumentDraftRequest = {},
+  onQueued?: (job: DocumentGenerationJob) => void,
+): Promise<SchoolViolenceDocumentResponse> {
+  const path = `${BASE}/${caseId}/documents/${formId}`
+  let accepted: SchoolViolenceDocumentResponse | DocumentGenerationJobResponse
+  try {
+    accepted = await apiFetch(`${path}/draft`, {
+      method: 'POST',
+      body: { ...request, async_generation: true },
+    })
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 422) {
+      const detail = (error.body as { detail?: { loc?: unknown[] }[] } | null)?.detail
+      if (Array.isArray(detail) && detail.some((item) => item.loc?.includes('async_generation'))) {
+        throw new ApiError(503, {
+          detail: '초안 생성 개선을 적용하려면 백엔드 서버를 최신 코드로 재시작해 주세요.',
+        })
+      }
+    }
+    throw error
+  }
+  // 명시적 모의 모드와 이미 저장한 결과는 바로 반환한다.
+  if (!accepted || typeof accepted !== 'object')
+    throw new ApiError(502, { detail: '초안 생성 작업 정보를 받지 못했어요.' })
+  if ('document' in accepted && accepted.document) return { document: accepted.document }
+  if (!('job' in accepted))
+    throw new ApiError(502, { detail: '초안 생성 작업 정보를 받지 못했어요.' })
+  onQueued?.(accepted.job)
+  const jobPath = `${path}/jobs/${encodeURIComponent(accepted.job.id)}`
+  const deadline = Date.now() + 10 * 60_000
+  while (Date.now() < deadline) {
+    let result: DocumentGenerationJobResponse
+    try {
+      result = await apiFetch(jobPath)
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 0) {
+        throw new ApiError(0, {
+          detail:
+            '진행 상태를 확인하지 못했어요. 서버의 생성은 계속되며 결과는 자동 저장됩니다. 화면을 다시 열어 확인해 주세요.',
+        })
+      }
+      throw error
+    }
+    if (!result?.job || result.job.id !== accepted.job.id)
+      throw new ApiError(502, { detail: '초안 생성 작업 상태가 올바르지 않아요.' })
+    if (result.job.status === 'failed') {
+      throw new ApiError(result.job.error?.status ?? 502, {
+        detail: result.job.error?.detail ?? '초안 생성에 실패했어요. 저장된 초안은 유지됩니다.',
+      })
+    }
+    if (result.job.status === 'completed') {
+      if (result.document) return { document: result.document }
+      throw new ApiError(502, {
+        detail: '완료된 초안을 받지 못했어요. 화면을 다시 열어 확인해 주세요.',
+      })
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+  }
+  throw new ApiError(504, {
+    detail: '생성이 계속 진행 중입니다. 결과는 자동 저장되니 화면을 다시 열어 확인해 주세요.',
   })
 }
 
@@ -130,10 +202,14 @@ export function useGenerateDocumentDraft(caseId: string, formId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (request: GenerateDocumentDraftRequest = {}) =>
-      apiFetch<SchoolViolenceDocumentResponse>(`${BASE}/${caseId}/documents/${formId}/draft`, {
-        method: 'POST',
-        body: request,
+      generateSchoolViolenceDraft(caseId, formId, request, (job) => {
+        queryClient.setQueryData<SchoolViolenceDocumentResponse>(
+          schoolViolenceDocumentKey(caseId, formId),
+          (old) => (old ? { document: { ...old.document, generation_job: job } } : old),
+        )
       }),
+    onError: () =>
+      queryClient.invalidateQueries({ queryKey: schoolViolenceDocumentKey(caseId, formId) }),
     onSuccess: (data) => {
       queryClient.setQueryData(schoolViolenceDocumentKey(caseId, formId), data)
       return Promise.all([
