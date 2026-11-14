@@ -20,15 +20,9 @@ import { Button } from '@/components/ui/button.tsx'
 import { useVoiceInput } from '@/hooks/useVoiceInput.ts'
 import { ApiError } from '@/lib/api.ts'
 import { DEMO_LINES } from '@/lib/counsel/demoLines.ts'
-import { STUDENT_COUNSEL_PATH } from '@/lib/counsel/paths.ts'
+import { STUDENT_COUNSEL_PATH, STUDENT_SCHOOL_VIOLENCE_PATH } from '@/lib/counsel/paths.ts'
 import { VOICE_ERROR_MESSAGES } from '@/lib/counsel/voice.ts'
 import { cn } from '@/lib/utils.ts'
-
-const BACK = (
-  <Link to={STUDENT_COUNSEL_PATH} className="inline-flex items-center gap-0.5 hover:underline">
-    <ChevronLeft className="size-4" /> 내 상담으로
-  </Link>
-)
 
 function errorDetail(error: unknown) {
   const detail =
@@ -42,7 +36,7 @@ function errorDetail(error: unknown) {
  * 키워드 감지로 교사에게 알림이 가도 대화는 이어진다. 알림이 간 자리에 안내 블록을 끼우고 머리말 설명을 바꿔 학생도 알게 한다.
  * 감지 키워드·위험도는 학생에게 보이지 않는다(위험도 높음일 때 위기 연락처만 덧붙는다).
  */
-function ChatbotChatPage() {
+function ChatbotChatPage({ schoolViolence = false }: { schoolViolence?: boolean }) {
   const { id = '' } = useParams()
   const { data, isPending, error } = useStudentCase(id)
   const sendMessage = useSendMessage(id)
@@ -60,6 +54,14 @@ function ChatbotChatPage() {
   const messageCount = data?.messages.length ?? 0
   const status = data?.case.status
   const pendingText = sendMessage.isPending ? sendMessage.variables.text : null
+  const backLink = (
+    <Link
+      to={schoolViolence ? STUDENT_SCHOOL_VIOLENCE_PATH : STUDENT_COUNSEL_PATH}
+      className="inline-flex items-center gap-0.5 hover:underline"
+    >
+      <ChevronLeft className="size-4" /> {schoolViolence ? '학폭 상담' : '내 상담'}으로
+    </Link>
+  )
 
   // 새 말풍선·입력 중 표시·안내 카드가 나타나면 대화 맨 아래로 내린다.
   // biome-ignore lint/correctness/useExhaustiveDependencies: 값이 바뀔 때마다 실행하는 것이 목적이다.
@@ -72,7 +74,7 @@ function ChatbotChatPage() {
     const notFound = error instanceof ApiError && error.status === 404
     return (
       <>
-        <PageHeader title="AI 챗봇 상담" back={BACK} />
+        <PageHeader title="AI 챗봇 상담" back={backLink} />
         <PageBody>
           <p className="rounded-[14px] border bg-card px-6 py-16 text-center text-muted-foreground">
             {isPending
@@ -138,7 +140,7 @@ function ChatbotChatPage() {
             '끝난 상담이에요. 대화는 읽기만 할 수 있어요.'
           )
         }
-        back={BACK}
+        back={backLink}
         actions={
           open ? (
             <>

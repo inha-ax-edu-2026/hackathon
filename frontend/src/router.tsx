@@ -5,9 +5,12 @@ import { TeacherShell } from '@/components/shell/TeacherShell.tsx'
 import {
   CHATBOT_FORM_PATH,
   COUNSEL_REGISTER_PATH,
+  chatbotFormPath,
   chatbotPath,
   counselDetailPath,
+  counselRegisterPath,
   STUDENT_COUNSEL_PATH,
+  STUDENT_SCHOOL_VIOLENCE_PATH,
   TEACHER_COUNSEL_PATH,
 } from '@/lib/counsel/paths.ts'
 import {
@@ -50,6 +53,19 @@ export const router = createBrowserRouter([
       { path: CHATBOT_FORM_PATH, element: <ChatbotFormPage /> },
       { path: chatbotPath(':id'), element: <ChatbotChatPage /> },
       { path: COUNSEL_REGISTER_PATH, element: <CounselRegisterPage /> },
+      { path: STUDENT_SCHOOL_VIOLENCE_PATH, element: <StudentCounselPage schoolViolence /> },
+      {
+        path: counselRegisterPath(STUDENT_SCHOOL_VIOLENCE_PATH),
+        element: <CounselRegisterPage />,
+      },
+      {
+        path: chatbotFormPath(STUDENT_SCHOOL_VIOLENCE_PATH),
+        element: <ChatbotFormPage schoolViolence />,
+      },
+      {
+        path: chatbotPath(':id', STUDENT_SCHOOL_VIOLENCE_PATH),
+        element: <ChatbotChatPage schoolViolence />,
+      },
     ],
   },
   {

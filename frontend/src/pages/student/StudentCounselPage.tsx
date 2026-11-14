@@ -7,9 +7,14 @@ import { StatusBadge } from '@/components/counsel/CaseBadges.tsx'
 import { CounselMethodDialog } from '@/components/counsel/CounselMethodDialog.tsx'
 import { PageBody, PageHeader } from '@/components/shell/PageHeader.tsx'
 import { Button } from '@/components/ui/button.tsx'
+import { SCHOOL_VIOLENCE_TOPIC } from '@/lib/counsel/form.ts'
 import { formatDateTime } from '@/lib/counsel/format.ts'
 import { DEMO_TEACHER_NAME } from '@/lib/counsel/identity.ts'
-import { chatbotPath } from '@/lib/counsel/paths.ts'
+import {
+  chatbotPath,
+  STUDENT_COUNSEL_PATH,
+  STUDENT_SCHOOL_VIOLENCE_PATH,
+} from '@/lib/counsel/paths.ts'
 
 const COLUMNS = ['상담상태', '상담방식', '상담일시', '상담제목', '상담 교사']
 
@@ -23,20 +28,31 @@ const dateLabel = (c: CounselCase) => {
 }
 
 /** 학생 「내 상담」 목록 + 상담 방식 선택 창. */
-function StudentCounselPage() {
+function StudentCounselPage({ schoolViolence = false }: { schoolViolence?: boolean }) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const navigate = useNavigate()
   const { data, isPending, isError } = useStudentCases()
-  const cases = data?.cases ?? []
+  const listPath = schoolViolence ? STUDENT_SCHOOL_VIOLENCE_PATH : STUDENT_COUNSEL_PATH
+  const allCases = data?.cases ?? []
+  // 목록에는 주제 필드가 없고 API가 챗봇 제목을 상담 양식의 주제로 만든다.
+  const cases = schoolViolence
+    ? allCases.filter(
+        (c) => c.kind === 'chatbot' && c.title === `[AI 챗봇] ${SCHOOL_VIOLENCE_TOPIC} 상담`,
+      )
+    : allCases
 
   return (
     <>
       <PageHeader
-        title="내 상담"
-        description="선생님과 나눈 상담과 신청한 상담을 확인해요."
+        title={schoolViolence ? '학폭 상담' : '내 상담'}
+        description={
+          schoolViolence
+            ? '학교폭력 상담 내역을 확인해요.'
+            : '선생님과 나눈 상담과 신청한 상담을 확인해요.'
+        }
         actions={
           <Button size="lg" onClick={() => setPickerOpen(true)}>
-            <Plus /> 상담 신청하기
+            <Plus /> {schoolViolence ? '상담하기' : '상담 신청하기'}
           </Button>
         }
       />
@@ -56,7 +72,7 @@ function StudentCounselPage() {
               {cases.map((c) => {
                 // 개인상담 건은 상세 화면이 아직 없어 열리지 않는다.
                 const openable = c.kind === 'chatbot'
-                const open = () => navigate(chatbotPath(c.id))
+                const open = () => navigate(chatbotPath(c.id, listPath))
                 return (
                   <tr
                     key={c.id}
@@ -97,7 +113,9 @@ function StudentCounselPage() {
                 ? '불러오는 중이에요.'
                 : isError
                   ? '상담 목록을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.'
-                  : '아직 상담이 없어요. 「상담 신청하기」로 시작해 보세요.'}
+                  : schoolViolence
+                    ? '아직 학폭 상담이 없어요. 「상담하기」로 시작해 보세요.'
+                    : '아직 상담이 없어요. 「상담 신청하기」로 시작해 보세요.'}
             </p>
           )}
           {!isPending && (
@@ -105,7 +123,7 @@ function StudentCounselPage() {
           )}
         </section>
       </PageBody>
-      <CounselMethodDialog open={pickerOpen} onOpenChange={setPickerOpen} />
+      <CounselMethodDialog open={pickerOpen} onOpenChange={setPickerOpen} listPath={listPath} />
     </>
   )
 }

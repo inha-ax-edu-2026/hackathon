@@ -12,15 +12,10 @@ import {
 } from '@/components/ui/dialog.tsx'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group.tsx'
 import { TEACHER_VISIBILITY_NOTICE } from '@/lib/counsel/labels.ts'
-import { CHATBOT_FORM_PATH, COUNSEL_REGISTER_PATH } from '@/lib/counsel/paths.ts'
+import { chatbotFormPath, counselRegisterPath } from '@/lib/counsel/paths.ts'
 import { cn } from '@/lib/utils.ts'
 
 type Method = 'chatbot' | 'individual'
-
-const NEXT_PATH: Record<Method, string> = {
-  chatbot: CHATBOT_FORM_PATH,
-  individual: COUNSEL_REGISTER_PATH,
-}
 
 const OPTIONS: { value: Method; title: string; description: string; icon: typeof Bot }[] = [
   {
@@ -37,21 +32,23 @@ const OPTIONS: { value: Method; title: string; description: string; icon: typeof
   },
 ]
 
-type CounselMethodDialogProps = { open: boolean; onOpenChange: (open: boolean) => void }
+type CounselMethodDialogProps = {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  listPath: string
+}
 
 /** 「+ 상담 신청하기」를 누르면 뜨는 상담 방식 선택 창. AI 챗봇 상담이 기본 선택이다. */
-export function CounselMethodDialog({ open, onOpenChange }: CounselMethodDialogProps) {
+export function CounselMethodDialog({ open, onOpenChange, listPath }: CounselMethodDialogProps) {
   const [method, setMethod] = useState<Method>('chatbot')
   const navigate = useNavigate()
+  const changeOpen = (next: boolean) => {
+    if (!next) setMethod('chatbot')
+    onOpenChange(next)
+  }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) setMethod('chatbot')
-        onOpenChange(next)
-      }}
-    >
+    <Dialog open={open} onOpenChange={changeOpen}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>상담 방식 선택</DialogTitle>
@@ -85,10 +82,19 @@ export function CounselMethodDialog({ open, onOpenChange }: CounselMethodDialogP
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => changeOpen(false)}>
             취소
           </Button>
-          <Button onClick={() => navigate(NEXT_PATH[method])}>다음</Button>
+          <Button
+            onClick={() => {
+              changeOpen(false)
+              navigate(
+                method === 'chatbot' ? chatbotFormPath(listPath) : counselRegisterPath(listPath),
+              )
+            }}
+          >
+            다음
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -17,7 +17,11 @@ import {
   START_TIME,
   toggleChoice,
 } from '@/lib/counsel/form.ts'
-import { chatbotPath, STUDENT_COUNSEL_PATH } from '@/lib/counsel/paths.ts'
+import {
+  chatbotPath,
+  STUDENT_COUNSEL_PATH,
+  STUDENT_SCHOOL_VIOLENCE_PATH,
+} from '@/lib/counsel/paths.ts'
 import { cn } from '@/lib/utils.ts'
 
 const fieldClass = 'min-w-0 rounded-xl border border-border bg-muted/25 px-4 py-3'
@@ -32,7 +36,7 @@ function errorMessage(error: unknown) {
 }
 
 /** AI 챗봇 상담의 상담 양식 작성(`/student/counsel/chatbot/new`). 제출하면 챗봇 화면으로 간다. */
-function ChatbotFormPage() {
+function ChatbotFormPage({ schoolViolence = false }: { schoolViolence?: boolean }) {
   const [selections, setSelections] = useState<Selections>({})
   const [detail, setDetail] = useState('')
   const [step, setStep] = useState(0)
@@ -40,6 +44,7 @@ function ChatbotFormPage() {
   const id = useId()
   const navigate = useNavigate()
   const createCase = useCreateCase()
+  const listPath = schoolViolence ? STUDENT_SCHOOL_VIOLENCE_PATH : STUDENT_COUNSEL_PATH
   const hasIncident = Boolean(selections[INCIDENT.question]?.length) || detail.trim() !== ''
 
   const goToStep = (nextStep: number) => {
@@ -87,14 +92,15 @@ function ChatbotFormPage() {
 
   const submit = () =>
     createCase.mutate(buildCounselForm(selections, detail), {
-      onSuccess: ({ case: created }) => navigate(chatbotPath(created.id), { replace: true }),
+      onSuccess: ({ case: created }) =>
+        navigate(chatbotPath(created.id, listPath), { replace: true }),
     })
 
   return (
     <>
       <PageHeader
         title="AI 챗봇 상담 신청"
-        back={<Link to={STUDENT_COUNSEL_PATH}>‹ 내 상담으로 돌아가기</Link>}
+        back={<Link to={listPath}>‹ {schoolViolence ? '학폭 상담' : '내 상담'}으로 돌아가기</Link>}
       />
       <PageBody className="px-4 sm:px-8">
         <form
@@ -184,7 +190,7 @@ function ChatbotFormPage() {
           <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t pt-4">
             {step === 0 ? (
               <Button asChild variant="outline">
-                <Link to={STUDENT_COUNSEL_PATH}>취소</Link>
+                <Link to={listPath}>취소</Link>
               </Button>
             ) : (
               <Button
